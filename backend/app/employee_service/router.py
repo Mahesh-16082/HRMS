@@ -116,7 +116,7 @@ def list_employees(
 
 # ============================================================
 # GET MY PROFILE
-# EMPLOYEE ONLY
+# HR + EMPLOYEE
 # ============================================================
 
 @router.get(
@@ -164,6 +164,7 @@ def update_my_profile(
         current_user.id,
         data,
     )
+
 
 # ============================================================
 # UPLOAD MY PROFILE PHOTO
@@ -222,6 +223,7 @@ def upload_my_profile_photo(
     db.refresh(employee)
 
     return employee
+
 
 # ============================================================
 # EMPLOYEE COUNTS
@@ -303,6 +305,7 @@ def update_employee(
 # ============================================================
 # UPDATE EMPLOYMENT STATUS
 # HR ONLY
+# HR CANNOT CHANGE OWN STATUS
 # ============================================================
 
 @router.patch(
@@ -321,6 +324,17 @@ def update_employee_status(
             detail="Only HR can change employee status.",
         )
 
+    employee = service.get_employee_by_id(
+        db,
+        employee_id,
+    )
+
+    if employee.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot change your own employment status.",
+        )
+
     return service.update_employee_status(
         db,
         employee_id,
@@ -331,6 +345,7 @@ def update_employee_status(
 # ============================================================
 # ACTIVATE EMPLOYEE
 # HR ONLY
+# HR CANNOT ACTIVATE/DEACTIVATE SELF
 # ============================================================
 
 @router.patch(
@@ -348,6 +363,17 @@ def activate_employee(
             detail="Only HR can activate employees.",
         )
 
+    employee = service.get_employee_by_id(
+        db,
+        employee_id,
+    )
+
+    if employee.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot activate or deactivate your own account.",
+        )
+
     return service.activate_employee(
         db,
         employee_id,
@@ -357,6 +383,7 @@ def activate_employee(
 # ============================================================
 # DEACTIVATE EMPLOYEE
 # HR ONLY
+# HR CANNOT ACTIVATE/DEACTIVATE SELF
 # ============================================================
 
 @router.patch(
@@ -374,6 +401,17 @@ def deactivate_employee(
             detail="Only HR can deactivate employees.",
         )
 
+    employee = service.get_employee_by_id(
+        db,
+        employee_id,
+    )
+
+    if employee.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot activate or deactivate your own account.",
+        )
+
     return service.deactivate_employee(
         db,
         employee_id,
@@ -383,6 +421,7 @@ def deactivate_employee(
 # ============================================================
 # ARCHIVE EMPLOYEE
 # HR ONLY
+# HR CANNOT ARCHIVE SELF
 # ============================================================
 
 @router.delete(
@@ -398,6 +437,17 @@ def archive_employee(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only HR can archive employees.",
+        )
+
+    employee = service.get_employee_by_id(
+        db,
+        employee_id,
+    )
+
+    if employee.user_id == current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You cannot archive your own employee profile.",
         )
 
     return service.archive_employee(
