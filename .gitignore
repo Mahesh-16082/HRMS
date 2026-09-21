@@ -1,0 +1,103 @@
+# ==============================
+# Environment Variables & Secrets
+# ==============================
+.env
+.env.*
+!.env.example
+
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# ==============================
+# FastAPI / Python Tools
+# ==============================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==============================
+# Alembic
+# ==============================
+# Keep migration files tracked.
+# Do NOT ignore alembic/versions/
+
+# ==============================
+# Node / React
+# ==============================
+node_modules/
+
+# Production builds
+dist/
+build/
+
+# Vite
+.vite/
+
+# ==============================
+# Logs
+# ==============================
+*.log
+logs/
+
+# ==============================
+# IDE / Editors
+# ==============================
+.vscode/
+.idea/
+
+# VS Code local history
+.history/
+
+# ==============================
+# OS Files
+# ==============================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==============================
+# Python Packaging
+# ==============================
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ==============================
+# Temporary Files
+# ==============================
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# ==============================
+# Database / Local Data
+# ==============================
+*.sqlite
+*.sqlite3
+*.db
+
+# ==============================
+# Test / Coverage
+# ==============================
+.pytest_cache/
+.coverage
+coverage.xml
+
+# ==============================
+# Uploads / Generated Files
+# ==============================
+uploads/
+media/

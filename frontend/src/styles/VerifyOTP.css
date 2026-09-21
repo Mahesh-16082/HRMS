@@ -1,0 +1,537 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@500;600;700&display=swap");
+
+/* =========================================================
+   TOKENS + RESET
+========================================================= */
+
+.verify-page,
+.verify-page *,
+.verify-page *::before,
+.verify-page *::after {
+  box-sizing: border-box;
+}
+
+.verify-page {
+  --navy: #0e1a33;
+  --ink: #16213f;
+  --ink-soft: #5b6478;
+  --muted: #8891a3;
+  --line: #e7e9f1;
+  --field: #f4f5f9;
+  --violet: #5a4bea;
+  --violet-soft: #ece9fb;
+  --orange: #f5943a;
+  --security-bg: #eef0f6;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+
+  overflow: hidden;
+
+  background: #fbfbfd;
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* =========================================================
+   BACKGROUND BLOBS
+========================================================= */
+
+.verify-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+
+  overflow: hidden;
+  background: #fbfbfd;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.55;
+}
+
+.blob-violet {
+  top: -12%;
+  left: -10%;
+  width: 46vw;
+  height: 46vw;
+  background: radial-gradient(circle at 30% 30%, #c9c2f5, #e7e2fb 70%);
+}
+
+.blob-blue {
+  top: 6%;
+  right: -8%;
+  width: 38vw;
+  height: 38vw;
+  background: radial-gradient(circle at 60% 40%, #d7e0fb, #eef1fc 70%);
+  opacity: 0.5;
+}
+
+.blob-peach {
+  bottom: -14%;
+  right: -6%;
+  width: 48vw;
+  height: 48vw;
+  background: radial-gradient(circle at 50% 50%, #fbd9b7, #fdeee0 70%);
+}
+
+.blob-pink {
+  bottom: -10%;
+  left: 8%;
+  width: 34vw;
+  height: 34vw;
+  background: radial-gradient(circle at 50% 50%, #f6d3d6, #fbeaec 70%);
+  opacity: 0.5;
+}
+
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.verify-header {
+  position: absolute;
+  top: clamp(20px, 3.4vh, 32px);
+  right: clamp(20px, 4vw, 56px);
+  z-index: 3;
+}
+
+.back-login-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 0;
+  border: none;
+  background: none;
+
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.back-login-button:hover {
+  color: var(--violet);
+}
+
+.back-arrow {
+  font-size: 1.05rem;
+  transition: transform 0.15s ease;
+}
+
+.back-login-button:hover .back-arrow {
+  transform: translateX(-3px);
+}
+
+
+/* =========================================================
+   CARD WRAPPER
+========================================================= */
+
+.verify-wrapper {
+  position: relative;
+  z-index: 2;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: clamp(16px, 4vh, 40px) 20px;
+}
+
+
+/* =========================================================
+   CARD
+========================================================= */
+
+.verify-card {
+  width: 100%;
+  max-width: 420px;
+
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow:
+    0 1px 2px rgba(16, 24, 55, 0.04),
+    0 24px 60px -20px rgba(16, 24, 55, 0.18);
+
+  padding: clamp(22px, 3.4vh, 32px) clamp(22px, 4vw, 36px) clamp(20px, 3vh, 28px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   ICON
+========================================================= */
+
+.verify-card-icon {
+  width: 54px;
+  height: 54px;
+  margin-bottom: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff, var(--violet-soft) 75%);
+  color: var(--violet);
+}
+
+.verify-card-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+
+/* =========================================================
+   HEADING + DESCRIPTION
+========================================================= */
+
+.verify-card h2 {
+  margin: 0 0 8px;
+
+  color: var(--navy);
+  font-family: var(--font-serif);
+  font-size: clamp(1.5rem, 2vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.verify-card-description {
+  margin: 0 0 20px;
+  max-width: 30em;
+
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.verify-card-description strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   OTP FORM
+========================================================= */
+
+.otp-form {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: clamp(6px, 1.4vw, 10px);
+
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.otp-input {
+  width: clamp(36px, 7vw, 46px);
+  height: clamp(40px, 7.5vw, 52px);
+
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: #ffffff;
+
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.otp-input:hover {
+  border-color: #c9cede;
+}
+
+.otp-input:focus,
+.otp-input.filled {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 4px rgba(90, 75, 234, 0.12);
+}
+
+.otp-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.otp-helper {
+  margin: 0 0 16px;
+
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.verify-error {
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 11px 14px;
+
+  border-radius: 10px;
+  background: #fdecec;
+  border: 1px solid #f6c9c9;
+
+  color: #c23b3b;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: center;
+}
+
+
+/* =========================================================
+   VERIFY BUTTON
+========================================================= */
+
+.otp-verify-button {
+  width: 100%;
+  height: 46px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5a4bea 0%, #9457d6 45%, #f5943a 100%);
+
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.otp-verify-button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.otp-verify-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.otp-verify-button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.otp-arrow {
+  font-size: 1.1rem;
+  transition: transform 0.15s ease;
+}
+
+.otp-verify-button:hover:not(:disabled) .otp-arrow {
+  transform: translateX(3px);
+}
+
+.otp-spinner {
+  width: 16px;
+  height: 16px;
+
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+
+  animation: otp-spin 0.7s linear infinite;
+}
+
+@keyframes otp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* =========================================================
+   RESEND
+========================================================= */
+
+.resend-section {
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+
+  font-size: 0.84rem;
+}
+
+.resend-section > span:first-child {
+  color: var(--ink-soft);
+}
+
+.resend-button {
+  border: none;
+  background: none;
+  padding: 0;
+
+  color: var(--violet);
+  font-weight: 700;
+  font-size: 0.92rem;
+
+  cursor: pointer;
+}
+
+.resend-button:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.resend-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resend-disabled {
+  color: var(--violet);
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+.resend-disabled > span {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+
+/* =========================================================
+   SECURITY BOX
+========================================================= */
+
+.verify-security {
+  width: 100%;
+  margin-top: 18px;
+  padding: 12px 14px;
+
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+
+  border-radius: 12px;
+  background: var(--security-bg);
+}
+
+.security-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 1px;
+
+  color: var(--navy);
+}
+
+.verify-security div strong {
+  display: block;
+  margin-bottom: 2px;
+
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.verify-security div span {
+  display: block;
+
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 640px) {
+  .verify-header {
+    top: 14px;
+    right: 16px;
+  }
+
+  .verify-wrapper {
+    padding: 16px 14px;
+  }
+
+  .verify-card {
+    border-radius: 18px;
+    padding: 22px 18px 18px;
+  }
+
+  .otp-inputs {
+    gap: 6px;
+  }
+
+  .otp-input {
+    width: 38px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .otp-verify-button {
+    height: 44px;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 359px) {
+  .otp-input {
+    width: 32px;
+    height: 40px;
+    font-size: 0.92rem;
+  }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .verify-page *,
+  .verify-page *::before,
+  .verify-page *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
