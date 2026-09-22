@@ -1,10 +1,15 @@
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.email_service import service as email_service
 from app.employee_service import repository as employee_repository
 from app.project_service import repository as project_repository
 from app.project_service import assignment_repository
 from app.project_service.assignment_models import ProjectAssignment
+
+logger = logging.getLogger(__name__)
 
 
 def create_assignment(
@@ -54,10 +59,39 @@ def create_assignment(
         employee_id=employee_id,
     )
 
-    return assignment_repository.create_assignment(
+    saved_assignment = assignment_repository.create_assignment(
         db,
         assignment,
     )
+
+    # Send assignment notification email to employee using existing SMTP service
+    recipient_email = employee.user.email if employee.user else None
+    if recipient_email:
+        try:
+            employee_name = f"{employee.first_name} {employee.last_name}".strip()
+            status_val = (
+                project.status.value
+                if hasattr(project.status, "value")
+                else str(project.status)
+            )
+            email_service.send_project_assignment_email(
+                recipient_email=recipient_email,
+                employee_name=employee_name,
+                project_name=project.project_name,
+                project_code=project.project_code,
+                description=project.description,
+                start_date=project.start_date,
+                end_date=project.end_date,
+                status=status_val,
+            )
+        except Exception as exc:
+            logger.error(
+                f"Project assignment saved, but failed to send email to {recipient_email}: {exc}",
+                exc_info=True,
+            )
+
+    return saved_assignment
+
 
 
 def get_project_assignments(

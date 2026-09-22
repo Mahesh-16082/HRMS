@@ -1,0 +1,127 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@500;600;700&display=swap");
+
+:root {
+  --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  
+  /* Brand Tokens extracted from Login & Welcome */
+  --navy-950: #08152b;
+  --navy-900: #0b1b35;
+  --navy: #0e1a33;
+  --ink: #101a33;
+  --ink-heading: #16244a;
+  --ink-soft: #4a5468;
+  --muted: #667085;
+  --text-muted: #5b6478;
+  --text-subtle: #8891a3;
+
+  /* Primary Accent Colors (restrained, corporate) */
+  --primary: #5a4bea;
+  --primary-hover: #4b3be0;
+  --primary-light: #ece9fb;
+  --primary-glow: rgba(90, 75, 234, 0.14);
+
+  --brand-orange: #f58a35;
+  --brand-orange-light: #fdeee0;
+  --brand-emerald: #12a17f;
+  --brand-emerald-light: #d9f2e8;
+  --brand-rose: #d63c8f;
+  --brand-rose-light: #fbdcee;
+  --brand-blue: #24406b;
+  --brand-blue-light: #dbeafe;
+
+  /* Surfaces (Neutral, Crisp Corporate) */
+  --bg-page: #f8f6fb;
+  --bg-card: #ffffff;
+  --bg-card-subtle: #f4f5f9;
+  --bg-sidebar: linear-gradient(180deg, #0b1a34 0%, #08152b 55%, #0c1f3f 100%);
+  --bg-header: rgba(255, 255, 255, 0.90);
+  --bg-pill: #eef1f6;
+  
+  --border-color: #e2e6ef;
+  --border-subtle: #edf0f7;
+  --line: #e2e6ef;
+
+  --text-main: #16244a;
+  --text-heading: #0b1b35;
+  --text-primary: #5a4bea;
+
+  /* Card Accents - Restrained, professional soft tints */
+  --accent-blue-bg: #edf2f9;
+  --accent-blue-text: #1d3557;
+  --accent-blue-bar: #5a4bea;
+
+  --accent-green-bg: #edf8f4;
+  --accent-green-text: #12a17f;
+  --accent-green-bar: #12a17f;
+
+  --accent-purple-bg: #f3f0fd;
+  --accent-purple-text: #5a4bea;
+  --accent-purple-bar: #5a4bea;
+
+  --accent-orange-bg: #fef5ec;
+  --accent-orange-text: #ea580c;
+  --accent-orange-bar: #f58a35;
+
+  --accent-pink-bg: #fdf2f7;
+  --accent-pink-text: #c02677;
+  --accent-pink-bar: #d63c8f;
+
+  /* Shadow Tokens - Soft, high-end corporate */
+  --shadow-sm: 0 1px 3px rgba(16, 24, 55, 0.05);
+  --shadow-card: 0 4px 20px -2px rgba(16, 24, 55, 0.05), 0 1px 4px -1px rgba(16, 24, 55, 0.03);
+  --shadow-card-hover: 0 12px 28px -4px rgba(16, 24, 55, 0.1), 0 3px 8px -2px rgba(16, 24, 55, 0.05);
+  --shadow-modal: 0 24px 60px -12px rgba(11, 27, 53, 0.28), 0 8px 20px -4px rgba(11, 27, 53, 0.15);
+
+  --radius-card: 20px;
+  --radius-button: 12px;
+  --radius-pill: 9999px;
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"] {
+  --bg-page: #08152b;
+  --bg-card: #0e1d38;
+  --bg-card-subtle: #0b172d;
+  --bg-sidebar: #071224;
+  --bg-header: rgba(14, 29, 56, 0.90);
+  --bg-pill: #1a2948;
+  
+  --border-color: #1e3156;
+  --border-subtle: #152442;
+  --line: #1e3156;
+
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --text-subtle: #64748b;
+  --text-heading: #ffffff;
+  --text-primary: #8176ff;
+
+  --primary: #6b5df7;
+  --primary-hover: #5a4bea;
+  --primary-light: rgba(90, 75, 234, 0.22);
+  --primary-glow: rgba(107, 93, 247, 0.25);
+
+  --accent-blue-bg: rgba(90, 75, 234, 0.16);
+  --accent-blue-text: #a5b4fc;
+  --accent-blue-bar: #6b5df7;
+  
+  --accent-green-bg: rgba(18, 161, 127, 0.16);
+  --accent-green-text: #6ee7b7;
+  --accent-green-bar: #12a17f;
+
+  --accent-purple-bg: rgba(107, 93, 247, 0.16);
+  --accent-purple-text: #c4b5fd;
+  --accent-purple-bar: #8b5cf6;
+
+  --accent-orange-bg: rgba(245, 138, 53, 0.16);
+  --accent-orange-text: #fdba74;
+  --accent-orange-bar: #f58a35;
+
+  --accent-pink-bg: rgba(214, 60, 143, 0.16);
+  --accent-pink-text: #f472b6;
+  --accent-pink-bar: #ec4899;
+
+  --shadow-card: 0 6px 22px rgba(0, 0, 0, 0.35);
+  --shadow-card-hover: 0 12px 30px rgba(0, 0, 0, 0.5);
+}

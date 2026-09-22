@@ -94,10 +94,6 @@ def remove_employee_from_project(
     "/me",
     response_model=ProjectAssignmentListResponse,
 )
-@router.get(
-    "/me",
-    response_model=ProjectAssignmentListResponse,
-)
 def get_my_project_assignments(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),

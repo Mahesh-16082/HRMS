@@ -117,7 +117,7 @@ def get_all_attendance(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if current_user.role.value != "hr":
+    if current_user.role != "hr":
         from fastapi import HTTPException, status
 
         raise HTTPException(
@@ -153,7 +153,7 @@ def get_employee_attendance(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if current_user.role.value != "hr":
+    if current_user.role != "hr":
         from fastapi import HTTPException, status
 
         raise HTTPException(
@@ -189,7 +189,7 @@ def get_attendance_count(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    if current_user.role.value != "hr":
+    if current_user.role != "hr":
         from fastapi import HTTPException, status
 
         raise HTTPException(

@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.project_service.schemas import ProjectResponse
+
 
 class ProjectAssignmentCreate(BaseModel):
     project_id: int
@@ -15,8 +17,9 @@ class ProjectAssignmentResponse(BaseModel):
     project_id: int
     employee_id: int
     assigned_at: datetime
+    project: ProjectResponse | None = None
 
 
 class ProjectAssignmentListResponse(BaseModel):
     total: int
-    assignments: list[ProjectAssignmentResponse]
+    assignments: list[ProjectAssignmentResponse]

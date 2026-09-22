@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 import "../styles/VerifyOTP.css";
 
 const API_URL = "http://localhost:8000";
 
 function VerifyOTP() {
   const navigate = useNavigate();
+  const { loginWithToken } = useAuth();
 
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState([
@@ -257,60 +259,61 @@ function VerifyOTP() {
 
 
       /* ================================================
-         DECODE JWT ROLE
+         INITIALIZE AUTH CONTEXT & VERIFY VIA /api/auth/me
       ================================================ */
 
+      let role = null;
+
       try {
+        if (loginWithToken) {
+          const authResult = await loginWithToken(
+            data.access_token,
+            data.token_type || "bearer"
+          );
+          if (authResult?.role) {
+            role = authResult.role;
+          }
+        }
+      } catch (authErr) {
+        console.warn("Auth initialization error:", authErr);
+      }
 
-        const tokenParts =
-          data.access_token.split(".");
-
-        const payload =
-          JSON.parse(
+      // Fallback: decode role from JWT payload if not retrieved from authResult
+      if (!role) {
+        try {
+          const tokenParts = data.access_token.split(".");
+          const payload = JSON.parse(
             atob(
               tokenParts[1]
                 .replace(/-/g, "+")
                 .replace(/_/g, "/")
             )
           );
-
-
-        const role =
-          payload.role;
-
-
-        if (
-          role === "hr"
-        ) {
-          navigate(
-            "/hr-dashboard",
-            {
-              replace: true,
-            }
-          );
-
-        } else if (
-          role === "employee"
-        ) {
-          navigate(
-            "/employee-dashboard",
-            {
-              replace: true,
-            }
-          );
-
-        } else {
-
-          navigate(
-            "/dashboard",
-            {
-              replace: true,
-            }
-          );
-
+          role = payload.role;
+        } catch {
+          role = null;
         }
+      }
 
-      } catch {
+      /* ================================================
+         REDIRECT TO CORRESPONDING DASHBOARD
+      ================================================ */
+
+      if (role === "hr") {
+        navigate(
+          "/hr-dashboard",
+          {
+            replace: true,
+          }
+        );
+      } else if (role === "employee") {
+        navigate(
+          "/employee-dashboard",
+          {
+            replace: true,
+          }
+        );
+      } else {
         navigate(
           "/dashboard",
           {

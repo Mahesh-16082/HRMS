@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+from app.employee_service.models import Employee
+from app.project_service.models import Project
 
 
 class ProjectAssignment(Base):
@@ -32,6 +34,13 @@ class ProjectAssignment(Base):
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+
+    project = relationship(
+        "Project",
+        foreign_keys=[project_id],
+        lazy="joined",
+    )
+
 
     __table_args__ = (
         UniqueConstraint(

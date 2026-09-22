@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.authentication_service.dependencies import get_current_user
 from app.core.database import get_db
+from app.employee_service import repository as employee_repository
+from app.project_service import assignment_repository
 from app.project_service import service
 from app.project_service.models import ProjectStatus
 from app.project_service.schemas import (
@@ -90,12 +92,41 @@ def get_project(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    require_hr(current_user)
+    if current_user.role == "hr":
+        return service.get_project(
+            db=db,
+            project_id=project_id,
+        )
+
+    # For employee users, verify assignment
+    employee = employee_repository.get_employee_by_user_id(
+        db,
+        current_user.id,
+    )
+
+    if not employee:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Employee profile not found",
+        )
+
+    assignment = assignment_repository.get_assignment(
+        db,
+        project_id,
+        employee.id,
+    )
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You are not assigned to this project",
+        )
 
     return service.get_project(
         db=db,
         project_id=project_id,
     )
+
 
 
 @router.put(

@@ -271,7 +271,7 @@ function Login() {
                   </>
                 ) : (
                   <>
-                    <span>Verify</span>
+                    <span>Get OTP</span>
                     <span className="verify-arrow" aria-hidden="true">
                       →
                     </span>
