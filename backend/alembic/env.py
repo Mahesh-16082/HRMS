@@ -13,8 +13,13 @@ from app.authentication_service import models
 from app.employee_service.models import Employee
 from app.attendance_service.models import Attendance
 from app.project_service.models import Project
+from app.project_service.role_models import ProjectRole
 from app.project_service.assignment_models import ProjectAssignment
 from app.leave_service.models import LeaveType, LeaveBalance, LeaveRequest
+from app.complaint_service.models import Complaint
+from app.announcement_service.models import Announcement
+from app.audit_service.models import AuditLog
+from app.work_report_service.models import WorkReport, WorkReportAttachment
 
 config = context.config
 

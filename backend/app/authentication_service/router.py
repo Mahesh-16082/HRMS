@@ -1,8 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
+from app.audit_service.service import extract_client_info
 from app.authentication_service import service
-from app.authentication_service.dependencies import get_current_user
+from app.authentication_service.dependencies import (
+    get_current_user,
+    get_current_user_and_session,
+)
 from app.authentication_service.schemas import (
     MessageResponse,
     SendOTPRequest,
@@ -50,12 +54,16 @@ def resend_otp(
 )
 def verify_otp(
     request: VerifyOTPRequest,
+    req: Request,
     db: Session = Depends(get_db)
 ):
+    ip_address, user_agent = extract_client_info(req)
     return service.verify_login_otp(
         db=db,
         email=request.email,
-        otp=request.otp
+        otp=request.otp,
+        ip_address=ip_address,
+        user_agent=user_agent,
     )
 
 
@@ -64,14 +72,18 @@ def verify_otp(
     response_model=MessageResponse
 )
 def logout(
+    req: Request,
     db: Session = Depends(get_db),
-    auth_data=Depends(get_current_user)
+    auth_data=Depends(get_current_user_and_session)
 ):
     user, session = auth_data
+    ip_address, user_agent = extract_client_info(req)
 
     return service.logout(
         db=db,
-        session_id=session.session_id
+        session_id=session.session_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
     )
 
 
@@ -80,14 +92,18 @@ def logout(
     response_model=MessageResponse
 )
 def logout_all_devices(
+    req: Request,
     db: Session = Depends(get_db),
-    auth_data=Depends(get_current_user)
+    auth_data=Depends(get_current_user_and_session)
 ):
     user, session = auth_data
+    ip_address, user_agent = extract_client_info(req)
 
     return service.logout_all_devices(
         db=db,
-        user_id=user.id
+        user_id=user.id,
+        ip_address=ip_address,
+        user_agent=user_agent,
     )
 
 

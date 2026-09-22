@@ -41,8 +41,10 @@ export default function Header({ onToggleMobileMenu }) {
     <header className="top-header">
       <div className="header-left">
         <button
+          type="button"
           className="mobile-menu-btn"
           onClick={onToggleMobileMenu}
+          title="Toggle navigation menu"
           aria-label="Toggle navigation menu"
         >
           <MenuIcon size={24} />

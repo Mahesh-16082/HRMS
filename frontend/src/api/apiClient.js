@@ -1,3 +1,5 @@
+import { broadcastAuthEvent, AUTH_EVENTS } from "../utils/authSync";
+
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const getAuthToken = () => {
@@ -36,6 +38,7 @@ export async function apiRequest(endpoint, options = {}) {
       // Do not clear session or force-redirect if we are in the middle of login or OTP verification
       if (token && currentPath !== "/login" && currentPath !== "/verify-otp" && currentPath !== "/") {
         clearAuthSession();
+        broadcastAuthEvent(AUTH_EVENTS.LOGOUT);
         window.location.href = "/login";
       }
       throw new Error("Session expired. Please log in again.");

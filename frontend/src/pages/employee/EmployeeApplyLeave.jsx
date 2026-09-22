@@ -135,7 +135,7 @@ export default function EmployeeApplyLeave() {
       setUserBalances(updatedBalancesRes?.balances || []);
 
       setTimeout(() => {
-        navigate("/employee-dashboard");
+        navigate("/employee/dashboard");
       }, 1600);
     } catch (err) {
       setError(err.message || "Failed to submit leave request.");
@@ -149,7 +149,7 @@ export default function EmployeeApplyLeave() {
       <SectionHeader
         title="Apply for Leave"
         actionText="← Back to Dashboard"
-        actionTo="/employee-dashboard"
+        actionTo="/employee/dashboard"
       />
 
       {/* Top Overview Cards */}
@@ -348,7 +348,7 @@ export default function EmployeeApplyLeave() {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => navigate("/employee-dashboard")}
+                  onClick={() => navigate("/employee/dashboard")}
                   disabled={submitting}
                 >
                   Cancel

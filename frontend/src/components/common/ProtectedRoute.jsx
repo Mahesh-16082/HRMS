@@ -3,11 +3,11 @@ import { useAuth } from "../../context/AuthContext";
 import { getAuthToken } from "../../api/apiClient";
 
 export default function ProtectedRoute({ allowedRoles = [] }) {
-  const { token, role, loading, user } = useAuth();
+  const { token, loading, isInitializing, user } = useAuth();
   const storedToken = getAuthToken();
 
   // If AuthContext is initializing or storedToken exists but user is not resolved yet, do NOT redirect to /login
-  if (loading || (storedToken && !user)) {
+  if (isInitializing || loading || (storedToken && !user)) {
     return (
       <div style={{
         display: "flex",
@@ -41,16 +41,18 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   }
 
   const effectiveToken = token || storedToken;
-  if (!effectiveToken) {
+  if (!effectiveToken || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  const effectiveRole = role || user?.role;
-  if (allowedRoles.length > 0 && effectiveRole && !allowedRoles.includes(effectiveRole)) {
-    if (effectiveRole === "hr") {
-      return <Navigate to="/hr-dashboard" replace />;
-    } else if (effectiveRole === "employee") {
-      return <Navigate to="/employee-dashboard" replace />;
+  // The role returned by GET /api/auth/me (stored in user.role) is the authoritative authorization source
+  const verifiedRole = user.role;
+
+  if (allowedRoles.length > 0 && !allowedRoles.includes(verifiedRole)) {
+    if (verifiedRole === "hr") {
+      return <Navigate to="/hr/dashboard" replace />;
+    } else if (verifiedRole === "employee") {
+      return <Navigate to="/employee/dashboard" replace />;
     } else {
       return <Navigate to="/login" replace />;
     }

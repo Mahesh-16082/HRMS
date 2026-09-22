@@ -8,6 +8,7 @@ import {
 } from "../../components/common/FeedbackStates";
 import {
   ProjectsIcon,
+  ProjectRolesIcon,
   CalendarIcon,
   CloseIcon,
   ArrowRight,
@@ -134,6 +135,12 @@ export default function EmployeeProjects() {
 
                 <div className="project-card-dates">
                   <div className="project-date-row">
+                    <span className="date-label">Role:</span>
+                    <span className="date-value" style={{ fontWeight: "600", color: "var(--primary-color, #2563eb)" }}>
+                      {item.role?.name || "Member"}
+                    </span>
+                  </div>
+                  <div className="project-date-row">
                     <span className="date-label">Timeline:</span>
                     <span className="date-value">
                       {formatDate(project?.start_date)} — {formatDate(project?.end_date)}
@@ -193,6 +200,16 @@ export default function EmployeeProjects() {
                     >
                       {selectedProject.project?.status || "ASSIGNED"}
                     </span>
+                    <span
+                      className="badge badge-planned"
+                      style={{
+                        fontSize: "11px",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      {selectedProject.role?.name || "Member"}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -250,6 +267,18 @@ export default function EmployeeProjects() {
 
               {/* Assignment Information */}
               <div className="detail-grid">
+                <div className="detail-card-tile">
+                  <div className="detail-tile-icon">
+                    <ProjectRolesIcon size={16} />
+                  </div>
+                  <div className="detail-tile-content">
+                    <span className="detail-label">Project Role</span>
+                    <span className="detail-value" style={{ fontWeight: "600", color: "var(--primary-color, #2563eb)" }}>
+                      {selectedProject.role?.name || "Member"}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="detail-card-tile">
                   <div className="detail-tile-icon">
                     <CalendarIcon size={16} />

@@ -44,6 +44,8 @@ export default function HRProjects() {
   const [projectAssignments, setProjectAssignments] = useState([]);
   const [loadingAssignments, setLoadingAssignments] = useState(false);
   const [selectedEmployeeToAssign, setSelectedEmployeeToAssign] = useState("");
+  const [selectedRoleToAssign, setSelectedRoleToAssign] = useState("");
+  const [availableRoles, setAvailableRoles] = useState([]);
   const [assigning, setAssigning] = useState(false);
 
   // Create/Edit form states
@@ -205,7 +207,19 @@ export default function HRProjects() {
     setSelectedProject(proj);
     setAssignModalOpen(true);
     setSelectedEmployeeToAssign("");
+    setSelectedRoleToAssign("");
     loadProjectAssignments(proj.id);
+    loadProjectRoles();
+  };
+
+  const loadProjectRoles = async () => {
+    try {
+      const data = await projectApi.getActiveProjectRoles();
+      setAvailableRoles(data.roles || (Array.isArray(data) ? data : []));
+    } catch (err) {
+      console.warn("Failed to load active project roles:", err.message);
+      setAvailableRoles([]);
+    }
   };
 
   const loadProjectAssignments = async (projectId) => {
@@ -224,15 +238,20 @@ export default function HRProjects() {
   // Assign Employee
   const handleAssignEmployee = async (e) => {
     e.preventDefault();
-    if (!selectedProject || !selectedEmployeeToAssign) return;
+    if (!selectedProject || !selectedEmployeeToAssign || !selectedRoleToAssign) return;
 
     setAssigning(true);
     setError("");
 
     try {
-      await projectApi.assignEmployee(selectedProject.id, selectedEmployeeToAssign);
+      await projectApi.assignEmployee(
+        selectedProject.id,
+        selectedEmployeeToAssign,
+        selectedRoleToAssign
+      );
       setSuccessMsg("Employee assigned to project!");
       setSelectedEmployeeToAssign("");
+      setSelectedRoleToAssign("");
       loadProjectAssignments(selectedProject.id);
     } catch (err) {
       setError(err.message || "Failed to assign employee.");
@@ -676,9 +695,9 @@ export default function HRProjects() {
 
             <div className="modal-body">
               {/* Assign Form */}
-              <form onSubmit={handleAssignEmployee} style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-                <div className="form-group" style={{ flex: 1 }}>
-                  <label className="form-label">Assign New Employee</label>
+              <form onSubmit={handleAssignEmployee} style={{ display: "flex", gap: "10px", alignItems: "flex-end", flexWrap: "wrap" }}>
+                <div className="form-group" style={{ flex: "1 1 200px" }}>
+                  <label className="form-label">Employee *</label>
                   <select
                     value={selectedEmployeeToAssign}
                     onChange={(e) => setSelectedEmployeeToAssign(e.target.value)}
@@ -694,13 +713,30 @@ export default function HRProjects() {
                   </select>
                 </div>
 
-                <button type="submit" className="btn btn-primary" disabled={assigning || !selectedEmployeeToAssign}>
+                <div className="form-group" style={{ flex: "1 1 180px" }}>
+                  <label className="form-label">Project Role *</label>
+                  <select
+                    value={selectedRoleToAssign}
+                    onChange={(e) => setSelectedRoleToAssign(e.target.value)}
+                    required
+                    className="form-select"
+                  >
+                    <option value="">Select role...</option>
+                    {availableRoles.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <button type="submit" className="btn btn-primary" disabled={assigning || !selectedEmployeeToAssign || !selectedRoleToAssign}>
                   {assigning ? "Assigning..." : "Assign"}
                 </button>
               </form>
 
               {/* Current Assignments List */}
-              <div style={{ marginTop: "12px" }}>
+              <div style={{ marginTop: "16px" }}>
                 <h4 style={{ fontSize: "13px", fontWeight: "700", color: "var(--text-heading)", marginBottom: "8px" }}>
                   Currently Assigned Members ({projectAssignments.length})
                 </h4>
@@ -726,10 +762,20 @@ export default function HRProjects() {
                           border: "1px solid var(--border-color)",
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                           <UsersIcon size={16} className="text-muted" />
                           <span style={{ fontSize: "13.5px", fontWeight: "600", color: "var(--text-heading)" }}>
                             {getEmployeeName(assignment.employee_id)}
+                          </span>
+                          <span
+                            className="badge badge-planned"
+                            style={{
+                              fontSize: "11px",
+                              padding: "2px 8px",
+                              borderRadius: "6px",
+                            }}
+                          >
+                            {assignment.role?.name || "Member"}
                           </span>
                         </div>
 

@@ -11,9 +11,9 @@ from app.core.database import get_db
 security = HTTPBearer()
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    db: Session = Depends(get_db)
+def _get_user_and_session(
+    credentials: HTTPAuthorizationCredentials,
+    db: Session,
 ):
     token = credentials.credentials
 
@@ -94,4 +94,19 @@ def get_current_user(
         session=session
     )
 
+    return user, session
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    user, _ = _get_user_and_session(credentials, db)
     return user
+
+
+def get_current_user_and_session(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    return _get_user_and_session(credentials, db)

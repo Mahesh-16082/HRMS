@@ -301,14 +301,14 @@ function VerifyOTP() {
 
       if (role === "hr") {
         navigate(
-          "/hr-dashboard",
+          "/hr/dashboard",
           {
             replace: true,
           }
         );
       } else if (role === "employee") {
         navigate(
-          "/employee-dashboard",
+          "/employee/dashboard",
           {
             replace: true,
           }

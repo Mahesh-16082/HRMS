@@ -6,6 +6,8 @@ import jwt
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from app.audit_service.models import AuditAction, AuditStatus
+from app.audit_service.service import record_audit_event
 from app.authentication_service import repository
 from app.core.config import settings
 from app.email_service.service import send_otp_email
@@ -118,7 +120,9 @@ def send_login_otp(db: Session, email: str):
 def verify_login_otp(
     db: Session,
     email: str,
-    otp: str
+    otp: str,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ):
     user = repository.get_user_by_email(
         db,
@@ -126,12 +130,29 @@ def verify_login_otp(
     )
 
     if not user:
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="User not found",
+        )
         raise HTTPException(
             status_code=404,
             detail="User not found"
         )
 
     if not user.is_active:
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            user_id=user.id,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="User account is inactive",
+        )
         raise HTTPException(
             status_code=403,
             detail="User account is inactive"
@@ -144,6 +165,15 @@ def verify_login_otp(
     )
 
     if not otp_record:
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            user_id=user.id,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="OTP not found or already used",
+        )
         raise HTTPException(
             status_code=400,
             detail="OTP not found or already used"
@@ -151,12 +181,19 @@ def verify_login_otp(
 
     # Check expiration
     if datetime.utcnow() > otp_record.expires_at:
-
         repository.mark_otp_as_used(
             db,
             otp_record
         )
-
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            user_id=user.id,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="OTP has expired",
+        )
         raise HTTPException(
             status_code=400,
             detail="OTP has expired"
@@ -164,12 +201,19 @@ def verify_login_otp(
 
     # Check maximum attempts
     if otp_record.attempts >= 5:
-
         repository.mark_otp_as_used(
             db,
             otp_record
         )
-
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            user_id=user.id,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="Too many incorrect attempts",
+        )
         raise HTTPException(
             status_code=400,
             detail="Too many incorrect attempts"
@@ -177,7 +221,6 @@ def verify_login_otp(
 
     # Verify OTP
     if hash_otp(otp) != otp_record.otp_hash:
-    
         repository.increment_otp_attempts(
             db,
             otp_record
@@ -188,12 +231,29 @@ def verify_login_otp(
                 db,
                 otp_record
             )
-
+            record_audit_event(
+                action=AuditAction.OTP_VERIFICATION,
+                status=AuditStatus.FAILED,
+                user_id=user.id,
+                email=email,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                details="Too many incorrect attempts. Please request a new OTP.",
+            )
             raise HTTPException(
                 status_code=400,
                 detail="Too many incorrect attempts. Please request a new OTP."
             )
 
+        record_audit_event(
+            action=AuditAction.OTP_VERIFICATION,
+            status=AuditStatus.FAILED,
+            user_id=user.id,
+            email=email,
+            ip_address=ip_address,
+            user_agent=user_agent,
+            details="Invalid OTP",
+        )
         raise HTTPException(
             status_code=400,
             detail="Invalid OTP"
@@ -203,6 +263,17 @@ def verify_login_otp(
     repository.mark_otp_as_used(
         db,
         otp_record
+    )
+
+    # Record successful OTP verification
+    record_audit_event(
+        action=AuditAction.OTP_VERIFICATION,
+        status=AuditStatus.SUCCESS,
+        user_id=user.id,
+        email=user.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="OTP verified successfully",
     )
 
     # Mark user as verified
@@ -241,6 +312,17 @@ def verify_login_otp(
         algorithm=settings.JWT_ALGORITHM
     )
 
+    # Record LOGIN event only after successful authentication/session creation
+    record_audit_event(
+        action=AuditAction.LOGIN,
+        status=AuditStatus.SUCCESS,
+        user_id=user.id,
+        email=user.email,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="Login successful, session created",
+    )
+
     return {
         "access_token": access_token,
         "token_type": "bearer"
@@ -253,7 +335,9 @@ def verify_login_otp(
 
 def logout(
     db: Session,
-    session_id: str
+    session_id: str,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ):
     session = repository.get_session(
         db,
@@ -266,9 +350,21 @@ def logout(
             detail="Session not found"
         )
 
+    user_id = session.user_id
+
     repository.invalidate_session(
         db,
         session
+    )
+
+    # Record LOGOUT event when the user successfully logs out
+    record_audit_event(
+        action=AuditAction.LOGOUT,
+        status=AuditStatus.SUCCESS,
+        user_id=user_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="User logged out successfully",
     )
 
     return {
@@ -282,11 +378,23 @@ def logout(
 
 def logout_all_devices(
     db: Session,
-    user_id: int
+    user_id: int,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
 ):
     repository.invalidate_all_user_sessions(
         db,
         user_id
+    )
+
+    # Record LOGOUT event when the user logs out from all devices
+    record_audit_event(
+        action=AuditAction.LOGOUT,
+        status=AuditStatus.SUCCESS,
+        user_id=user_id,
+        ip_address=ip_address,
+        user_agent=user_agent,
+        details="Logged out from all devices",
     )
 
     return {

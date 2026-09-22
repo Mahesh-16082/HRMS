@@ -20,15 +20,12 @@ def get_project_by_id(
 def get_project_by_code(
     db: Session,
     project_code: str,
+    include_deleted: bool = False,
 ):
-    return (
-        db.query(Project)
-        .filter(
-            Project.project_code == project_code,
-            Project.deleted_at.is_(None),
-        )
-        .first()
-    )
+    query = db.query(Project).filter(Project.project_code == project_code)
+    if not include_deleted:
+        query = query.filter(Project.deleted_at.is_(None))
+    return query.first()
 
 
 def create_project(

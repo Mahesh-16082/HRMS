@@ -44,43 +44,44 @@ export default function Sidebar({
   };
 
   const hrNavItems = [
-    { label: "Dashboard", to: "/hr-dashboard", icon: DashboardIcon, functional: true },
+    { label: "Dashboard", to: "/hr/dashboard", icon: DashboardIcon, functional: true },
     { label: "Employees", to: "/hr/employees", icon: UsersIcon, functional: true },
     { label: "Performance", to: "#", icon: PerformanceIcon, functional: false },
     { label: "Projects", to: "/hr/projects", icon: ProjectsIcon, functional: true },
-    { label: "Project Roles", to: "#", icon: ProjectRolesIcon, functional: false },
-    { label: "Announcements", to: "#", icon: AnnouncementsIcon, functional: false },
-    { label: "Work Reports", to: "#", icon: WorkReportsIcon, functional: false },
-    { label: "Complaints", to: "#", icon: ComplaintsIcon, functional: false },
+    { label: "Project Roles", to: "/hr/project-roles", icon: ProjectRolesIcon, functional: true },
+    { label: "Announcements", to: "/hr/announcements", icon: AnnouncementsIcon, functional: true },
+    { label: "Work Reports", to: "/hr/work-reports", icon: WorkReportsIcon, functional: true },
+    { label: "Complaints", to: "/hr/complaints", icon: ComplaintsIcon, functional: true },
     { label: "Attendance", to: "/hr/attendance", icon: AttendanceIcon, functional: true },
     { label: "Leave Requests", to: "/hr/leave-requests", icon: LeaveRequestsIcon, functional: true },
     { label: "Leave Types", to: "/hr/leave-types", icon: LeaveTypesIcon, functional: true },
     { label: "Leave Balances", to: "/hr/leave-balances", icon: LeaveBalancesIcon, functional: true },
-    { label: "Audit Logs", to: "#", icon: AuditLogsIcon, functional: false },
+    { label: "Audit Logs", to: "/hr/audit-logs", icon: AuditLogsIcon, functional: true },
     { label: "Notifications", to: "#", icon: NotificationsIcon, functional: false },
   ];
 
   const employeeNavItems = [
-    { label: "Dashboard", to: "/employee-dashboard", icon: DashboardGridIcon, functional: true },
+    { label: "Dashboard", to: "/employee/dashboard", icon: DashboardGridIcon, functional: true },
     { label: "My Profile", to: "/employee/profile", icon: UserIcon, functional: true },
     { label: "My Performance", to: "#", icon: PerformanceIcon, functional: false },
     { label: "My Projects", to: "/employee/projects", icon: ProjectsIcon, functional: true },
-    { label: "Announcements", to: "#", icon: AnnouncementsIcon, functional: false },
-    { label: "Work Reports", to: "#", icon: WorkReportsIcon, functional: false },
-    { label: "Complaints", to: "#", icon: ComplaintsIcon, functional: false },
+    { label: "Announcements", to: "/employee/announcements", icon: AnnouncementsIcon, functional: true },
+    { label: "Work Reports", to: "/employee/work-reports", icon: WorkReportsIcon, functional: true },
+    { label: "Complaints", to: "/employee/complaints", icon: ComplaintsIcon, functional: true },
     { label: "Attendance", to: "/employee/attendance", icon: AttendanceIcon, functional: true },
     { label: "Apply for Leave", to: "/employee/apply-leave", icon: LeaveRequestsIcon, functional: true },
     { label: "Notifications", to: "#", icon: NotificationsIcon, functional: false },
   ];
 
   const items = isHR ? hrNavItems : employeeNavItems;
+  const showFullContent = !isCollapsed || isOpen;
 
   return (
     <aside className={`sidebar ${isOpen ? "open" : ""} ${isCollapsed ? "collapsed" : ""}`}>
       <div className="sidebar-header">
         <div className="sidebar-brand-group">
           <LogoIcon size={36} />
-          {!isCollapsed && (
+          {showFullContent && (
             <div className="sidebar-brand-text">
               <span className="sidebar-brand-title">HRMS</span>
               <span className="sidebar-brand-subtitle">Enterprise Portal</span>
@@ -88,18 +89,30 @@ export default function Sidebar({
           )}
         </div>
 
+        {/* Desktop collapse toggle button */}
         <button
           type="button"
-          className="sidebar-collapse-toggle-btn"
+          className="sidebar-collapse-toggle-btn sidebar-desktop-toggle-btn"
           onClick={onToggleCollapse}
           title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
+
+        {/* Mobile sidebar collapse/close button */}
+        <button
+          type="button"
+          className="sidebar-collapse-toggle-btn sidebar-mobile-close-btn"
+          onClick={onCloseMobileMenu}
+          title="Collapse sidebar"
+          aria-label="Collapse sidebar"
+        >
+          <ChevronLeft size={16} />
+        </button>
       </div>
 
-      {!isHR && !isCollapsed && <div className="sidebar-section-label">MAIN MENU</div>}
+      {!isHR && showFullContent && <div className="sidebar-section-label">MAIN MENU</div>}
 
       <nav className="sidebar-nav">
         {items.map((item) => {
@@ -113,7 +126,7 @@ export default function Sidebar({
                 onClick={(e) => handleItemClick(true, e)}
               >
                 <Icon size={20} />
-                {!isCollapsed && <span className="nav-item-label">{item.label}</span>}
+                {showFullContent && <span className="nav-item-label">{item.label}</span>}
               </span>
             );
           }
@@ -126,11 +139,11 @@ export default function Sidebar({
                 `sidebar-nav-item ${isActive ? "active" : ""}`
               }
               onClick={(e) => handleItemClick(false, e)}
-              end={item.to === "/hr-dashboard" || item.to === "/employee-dashboard"}
-              title={isCollapsed ? item.label : undefined}
+              end={item.to === "/hr/dashboard" || item.to === "/employee/dashboard"}
+              title={!showFullContent ? item.label : undefined}
             >
               <Icon size={20} />
-              {!isCollapsed && <span className="nav-item-label">{item.label}</span>}
+              {showFullContent && <span className="nav-item-label">{item.label}</span>}
             </NavLink>
           );
         })}
@@ -140,10 +153,10 @@ export default function Sidebar({
         <button
           className="sign-out-btn"
           onClick={logout}
-          title={isCollapsed ? "Sign Out" : undefined}
+          title={!showFullContent ? "Sign Out" : undefined}
         >
           <SignOutIcon size={18} />
-          {!isCollapsed && <span>Sign Out</span>}
+          {showFullContent && <span>Sign Out</span>}
         </button>
       </div>
     </aside>

@@ -16,6 +16,7 @@ import {
   MessageSquareIcon,
   NotificationsIcon,
   ShieldIcon,
+  AuditLogsIcon,
   ArrowRight,
 } from "../../components/icons/Icons";
 
@@ -88,7 +89,7 @@ export default function HRDashboard() {
       <HeroGreeting name={hrName} />
 
       {/* Top Stat Cards Row with Real Backend Numbers */}
-      <div className="stats-grid">
+      <div className="stats-grid hr-dashboard-stats-grid">
         <StatCard
           icon={UsersIcon}
           number={stats.totalEmployees}
@@ -126,26 +127,12 @@ export default function HRDashboard() {
 
         <div className="quick-actions-circles-row">
           {/* Daily Work Reports */}
-          <div
-            className="quick-action-circle-item"
-            onClick={() => alert("Work Report Service is scheduled for a future update.")}
-          >
+          <Link to="/hr/work-reports" className="quick-action-circle-item">
             <div className="quick-action-round-btn" style={{ background: "#dbeafe", color: "#2563eb" }}>
               <WorkReportsIcon size={24} />
             </div>
             <span className="quick-action-label">Daily Work Reports</span>
-          </div>
-
-          {/* Raise Complaint */}
-          <div
-            className="quick-action-circle-item"
-            onClick={() => alert("Complaint Service is scheduled for a future update.")}
-          >
-            <div className="quick-action-round-btn" style={{ background: "#ffe4e6", color: "#e11d48" }}>
-              <MessageSquareIcon size={24} />
-            </div>
-            <span className="quick-action-label">Raise Complaint</span>
-          </div>
+          </Link>
 
           {/* Mark Attendance (Functional -> links to HR Attendance) */}
           <Link to="/hr/attendance" className="quick-action-circle-item">
@@ -156,15 +143,12 @@ export default function HRDashboard() {
           </Link>
 
           {/* View Audit Logs */}
-          <div
-            className="quick-action-circle-item"
-            onClick={() => alert("Audit Service is scheduled for a future update.")}
-          >
+          <Link to="/hr/audit-logs" className="quick-action-circle-item">
             <div className="quick-action-round-btn" style={{ background: "#ffedd5", color: "#ea580c" }}>
-              <WorkReportsIcon size={24} />
+              <AuditLogsIcon size={24} />
             </div>
             <span className="quick-action-label">View Audit Logs</span>
-          </div>
+          </Link>
 
           {/* Check Notifications */}
           <div
@@ -185,7 +169,18 @@ export default function HRDashboard() {
 
         <div className="governance-grid">
           {/* Workplace Complaints */}
-          <div className="governance-card">
+          <div
+            className="governance-card clickable"
+            onClick={() => navigate("/hr/complaints")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/hr/complaints");
+              }
+            }}
+          >
             <div className="governance-icon-wrap" style={{ background: "#dbeafe", color: "#2563eb" }}>
               <MessageSquareIcon size={24} />
             </div>
@@ -196,18 +191,33 @@ export default function HRDashboard() {
               </span>
             </div>
             <button
+              type="button"
               className="governance-arrow-btn"
               aria-label="View Workplace Complaints"
-              onClick={() => alert("Complaint Service is scheduled for a future update.")}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/hr/complaints");
+              }}
             >
               <ArrowRight size={15} />
             </button>
           </div>
 
           {/* System Audit Logs */}
-          <div className="governance-card">
+          <div
+            className="governance-card clickable"
+            onClick={() => navigate("/hr/audit-logs")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/hr/audit-logs");
+              }
+            }}
+          >
             <div className="governance-icon-wrap" style={{ background: "#f3e8ff", color: "#9333ea" }}>
-              <WorkReportsIcon size={24} />
+              <AuditLogsIcon size={24} />
             </div>
             <div className="governance-content">
               <span className="governance-title">System Audit Logs</span>
@@ -216,9 +226,13 @@ export default function HRDashboard() {
               </span>
             </div>
             <button
+              type="button"
               className="governance-arrow-btn"
               aria-label="View System Audit Logs"
-              onClick={() => alert("Audit Service is scheduled for a future update.")}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/hr/audit-logs");
+              }}
             >
               <ArrowRight size={15} />
             </button>

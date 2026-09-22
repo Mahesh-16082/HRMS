@@ -1,0 +1,659 @@
+/* ========================================================
+   WORK REPORTS MODULE STYLES
+   Adheres to HRMS design system and CSS variables
+======================================================== */
+
+/* Status Badges */
+.badge-status-draft {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-status-submitted {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-status-approved {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-status-rejected {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-weight: 600;
+  font-size: 11.5px;
+  padding: 3px 9px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Dark Theme Badge Adaptations */
+[data-theme="dark"] .badge-status-draft {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+[data-theme="dark"] .badge-status-submitted {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+[data-theme="dark"] .badge-status-approved {
+  background: rgba(34, 197, 94, 0.15);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .badge-status-rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Today's Report Banner */
+.wr-today-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-left: 4px solid var(--primary, #5746e8);
+  border-radius: 12px;
+  margin-bottom: 24px;
+  gap: 16px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+  flex-wrap: wrap;
+}
+
+.wr-today-banner.draft {
+  border-left-color: #64748b;
+}
+
+.wr-today-banner.submitted {
+  border-left-color: #f59e0b;
+}
+
+.wr-today-banner.approved {
+  border-left-color: #10b981;
+}
+
+.wr-today-banner.rejected {
+  border-left-color: #ef4444;
+}
+
+.wr-today-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.wr-today-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #f3f0ff;
+  color: #5746e8;
+}
+
+.wr-today-banner.draft .wr-today-icon {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.wr-today-banner.submitted .wr-today-icon {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.wr-today-banner.approved .wr-today-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.wr-today-banner.rejected .wr-today-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.wr-today-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-heading, #0f172a);
+}
+
+.wr-today-details p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted, #64748b);
+}
+
+.wr-today-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Rejection Feedback Alert Box */
+.wr-rejection-alert {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+}
+
+[data-theme="dark"] .wr-rejection-alert {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.25);
+  border-left-color: #ef4444;
+}
+
+.wr-rejection-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #b91c1c;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+[data-theme="dark"] .wr-rejection-header {
+  color: #fca5a5;
+}
+
+.wr-rejection-text {
+  color: #7f1d1d;
+  font-size: 13.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  margin: 0 0 6px 0;
+}
+
+[data-theme="dark"] .wr-rejection-text {
+  color: #fecaca;
+}
+
+.wr-rejection-meta {
+  font-size: 11.5px;
+  color: #991b1b;
+  opacity: 0.85;
+}
+
+[data-theme="dark"] .wr-rejection-meta {
+  color: #f87171;
+}
+
+/* Attachment Component Styles */
+.wr-attachment-section {
+  margin-top: 14px;
+  margin-bottom: 14px;
+}
+
+.wr-attachment-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+[data-theme="dark"] .wr-attachment-card {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.wr-attachment-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.wr-attachment-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #ede9fe;
+  color: #5746e8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .wr-attachment-icon {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+}
+
+.wr-attachment-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wr-attachment-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-heading, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+}
+
+.wr-attachment-sub {
+  font-size: 11.5px;
+  color: var(--text-muted, #64748b);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wr-attachment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wr-file-dropzone {
+  border: 2px dashed var(--border-color, #cbd5e1);
+  border-radius: 8px;
+  padding: 20px 16px;
+  text-align: center;
+  background: var(--bg-surface, #f8fafc);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.wr-file-dropzone:hover {
+  border-color: var(--primary, #5746e8);
+  background: #faf5ff;
+}
+
+[data-theme="dark"] .wr-file-dropzone {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: #334155;
+}
+
+[data-theme="dark"] .wr-file-dropzone:hover {
+  background: rgba(87, 70, 232, 0.06);
+  border-color: #746be8;
+}
+
+.wr-file-dropzone-text {
+  font-size: 13px;
+  color: var(--text-heading, #0f172a);
+  font-weight: 500;
+  margin: 6px 0 2px 0;
+}
+
+.wr-file-dropzone-hint {
+  font-size: 11.5px;
+  color: var(--text-muted, #64748b);
+}
+
+/* Detail View Layout */
+.wr-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.wr-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wr-detail-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted, #64748b);
+}
+
+.wr-detail-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-heading, #0f172a);
+}
+
+.wr-detail-block {
+  margin-bottom: 18px;
+}
+
+.wr-detail-block-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-heading, #0f172a);
+  margin-bottom: 6px;
+}
+
+.wr-detail-block-content {
+  font-size: 13.5px;
+  color: var(--text-body, #334155);
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 12px 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+[data-theme="dark"] .wr-detail-block-content {
+  background: rgba(255, 255, 255, 0.02);
+  color: #cbd5e1;
+}
+
+/* Form Styles */
+.wr-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* ========================================================
+   FILTER TOOLBAR & CONTROLS (Employee & HR)
+   Consistent with HRMS design system: 10-12px radius, 42px height,
+   subtle border, themed background, customized selects & dates.
+======================================================== */
+.wr-filters-card {
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.04));
+}
+
+.wr-filters-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.wr-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 140px;
+  flex: 1 1 auto;
+}
+
+.wr-filter-item.fixed-sm {
+  flex: 0 1 150px;
+  min-width: 130px;
+}
+
+.wr-filter-item.fixed-md {
+  flex: 0 1 200px;
+  min-width: 160px;
+}
+
+.wr-filter-item.grow {
+  flex: 2 1 240px;
+  min-width: 200px;
+}
+
+.wr-filter-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.wr-filter-control,
+.wr-filter-select,
+.wr-filter-input,
+.wr-filter-date {
+  height: 42px;
+  min-height: 42px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #0f172a);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 0 14px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.wr-filter-control:focus,
+.wr-filter-select:focus,
+.wr-filter-input:focus,
+.wr-filter-date:focus {
+  border-color: var(--primary, #5746e8);
+  box-shadow: 0 0 0 3px rgba(87, 70, 232, 0.15);
+}
+
+.wr-filter-control::placeholder,
+.wr-filter-input::placeholder {
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+  font-weight: 400;
+  opacity: 1;
+}
+
+/* Custom polished dropdown arrow for selects */
+.wr-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 14px;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+/* Polished styling for native HTML5 date input */
+.wr-filter-date {
+  cursor: pointer;
+  color: var(--text-main, #0f172a);
+}
+
+.wr-filter-date::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+  filter: invert(0.3);
+  transition: opacity 0.15s ease;
+}
+
+.wr-filter-date:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* Search input with leading icon */
+.wr-search-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.wr-search-wrap .wr-filter-input {
+  padding-left: 36px;
+}
+
+.wr-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* Filter Action Buttons */
+.wr-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 1px;
+}
+
+.wr-btn-reset {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-surface, #f8fafc);
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.wr-btn-reset:hover {
+  background: var(--bg-hover, #f1f5f9);
+  color: var(--text-heading, #0f172a);
+  border-color: #cbd5e1;
+}
+
+/* Locked attachment indicator */
+.wr-attachment-locked-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-surface, #f8fafc);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted, #64748b);
+  user-select: none;
+}
+
+/* Dark Theme Overrides for Filters & Locked Badge */
+[data-theme="dark"] .wr-filters-card {
+  background: var(--card-bg, #1e293b);
+  border-color: #334155;
+}
+
+[data-theme="dark"] .wr-filter-control,
+[data-theme="dark"] .wr-filter-select,
+[data-theme="dark"] .wr-filter-input,
+[data-theme="dark"] .wr-filter-date {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .wr-filter-control:focus,
+[data-theme="dark"] .wr-filter-select:focus,
+[data-theme="dark"] .wr-filter-input:focus,
+[data-theme="dark"] .wr-filter-date:focus {
+  border-color: #746be8;
+  box-shadow: 0 0 0 3px rgba(116, 107, 232, 0.25);
+}
+
+[data-theme="dark"] .wr-filter-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] .wr-filter-date::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+[data-theme="dark"] .wr-btn-reset {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .wr-btn-reset:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .wr-attachment-locked-badge {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  .wr-form-row {
+    grid-template-columns: 1fr;
+  }
+  .wr-attachment-name {
+    max-width: 200px;
+  }
+  .wr-today-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .wr-filter-item {
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
+  .wr-filter-item.fixed-sm,
+  .wr-filter-item.fixed-md,
+  .wr-filter-item.grow {
+    flex: 1 1 100%;
+  }
+}

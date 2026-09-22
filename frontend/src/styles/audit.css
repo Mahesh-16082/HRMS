@@ -1,0 +1,208 @@
+/* ========================================================
+   AUDIT LOGS MODULE STYLES
+   Adheres strictly to the HRMS design system and CSS variables
+======================================================== */
+
+/* Action Badges */
+.badge-action-login {
+  background: #e0e7ff;
+  color: #3730a3;
+  border: 1px solid rgba(55, 48, 163, 0.15);
+}
+
+.badge-action-logout {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid rgba(71, 85, 105, 0.15);
+}
+
+.badge-action-otp {
+  background: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid rgba(107, 33, 168, 0.15);
+}
+
+[data-theme="dark"] .badge-action-login {
+  background: rgba(99, 102, 241, 0.2);
+  color: #a5b4fc;
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+[data-theme="dark"] .badge-action-logout {
+  background: rgba(148, 163, 184, 0.15);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .badge-action-otp {
+  background: rgba(168, 85, 247, 0.2);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+/* Status Badges */
+.badge-audit-success {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid rgba(21, 128, 61, 0.2);
+}
+
+.badge-audit-failed {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid rgba(185, 28, 28, 0.2);
+}
+
+[data-theme="dark"] .badge-audit-success {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .badge-audit-failed {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* Monospace text for network identifiers */
+.audit-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Filter Card & Container */
+.audit-filters-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.audit-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.audit-filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.audit-filter-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.audit-filter-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* User Agent column truncated */
+.audit-ua-truncate {
+  display: block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+/* Modal details styling */
+.audit-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  margin: 16px 0;
+}
+
+.audit-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audit-detail-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.audit-detail-value {
+  font-size: 13.5px;
+  color: var(--text-heading);
+  word-break: break-word;
+}
+
+.audit-banner-notice {
+  background: var(--bg-hover);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile responsive card list */
+.audit-mobile-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.audit-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.audit-mobile-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 768px) {
+  .audit-filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audit-filter-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .audit-filter-actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}

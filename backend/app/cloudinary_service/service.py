@@ -30,3 +30,32 @@ def delete_profile_photo(public_id: str):
         public_id,
         resource_type="image",
     )
+
+
+def upload_work_report_attachment(file, report_id: int, original_filename: str, resource_type: str = "auto"):
+    """
+    Upload a document attachment for a work report to Cloudinary.
+    Uses 'auto' or 'raw'/'image' resource_type so PDF, Word, Excel, PowerPoint, Text, and Images are properly handled.
+    """
+    result = cloudinary.uploader.upload(
+        file,
+        folder=f"hrms/work_reports/{report_id}",
+        resource_type=resource_type,
+        use_filename=True,
+        filename_override=original_filename,
+    )
+
+    return {
+        "url": result["secure_url"],
+        "public_id": result["public_id"],
+    }
+
+
+def delete_work_report_attachment(public_id: str, resource_type: str = "raw"):
+    """
+    Delete a work report attachment from Cloudinary.
+    """
+    return cloudinary.uploader.destroy(
+        public_id,
+        resource_type=resource_type,
+    )

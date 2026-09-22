@@ -144,6 +144,10 @@
   border-color: rgba(255, 255, 255, 0.25);
 }
 
+.sidebar-mobile-close-btn {
+  display: none !important;
+}
+
 .sidebar-section-label {
   padding: 18px 22px 6px;
   font-size: 10.5px;
@@ -615,6 +619,112 @@
   gap: 18px;
 }
 
+/* ========================================================
+   ISOLATED DASHBOARD STAT CARDS ALIGNMENT
+   (Applies strictly to HR Dashboard & Employee Dashboard only)
+======================================================== */
+.hr-dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.hr-dashboard-stats-grid .stat-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.hr-dashboard-stats-grid .stat-info {
+  min-width: 0;
+}
+
+.employee-dashboard-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  width: 100%;
+}
+
+.employee-dashboard-stats-grid .stat-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.employee-dashboard-stats-grid .stat-info {
+  min-width: 0;
+}
+
+@media (max-width: 1024px) and (min-width: 769px) {
+  .hr-dashboard-stats-grid,
+  .employee-dashboard-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hr-dashboard-stats-grid,
+  .employee-dashboard-stats-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+/* ========================================================
+   COMPLAINT STATISTIC CARDS GRID
+   (Scoped exclusively to HR Complaints & Employee Complaints)
+======================================================== */
+.stats-row,
+.complaint-stats-grid {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+}
+
+.complaint-stats-grid .stat-card,
+.stats-row .stat-card {
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.complaint-stats-grid .stat-info,
+.stats-row .stat-info {
+  min-width: 0;
+}
+
+/* HR Complaints: 3 + 2 layout on desktop (preferred) */
+.complaint-stats-grid.hr-complaint-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* Employee Complaints: 4 cards on desktop */
+.complaint-stats-grid.employee-complaint-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Tablet: balanced 2-column grid */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .stats-row,
+  .complaint-stats-grid,
+  .complaint-stats-grid.hr-complaint-stats,
+  .complaint-stats-grid.employee-complaint-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+}
+
+/* Mobile: vertical stack (1 column) */
+@media (max-width: 768px) {
+  .stats-row,
+  .complaint-stats-grid,
+  .complaint-stats-grid.hr-complaint-stats,
+  .complaint-stats-grid.employee-complaint-stats {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
 .stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -846,6 +956,27 @@
 .governance-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-card-hover);
+}
+
+.governance-card.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.governance-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
+  border-color: rgba(90, 75, 234, 0.35);
+}
+
+.governance-card.clickable:hover .governance-arrow-btn {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.governance-card.clickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 .governance-icon-wrap {
@@ -1691,6 +1822,7 @@
     top: 0;
     left: 0;
     bottom: 0;
+    z-index: 50 !important;
     transform: translateX(-100%);
     box-shadow: 0 0 35px rgba(8, 21, 43, 0.35);
     transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1730,8 +1862,12 @@
     display: inline !important;
   }
 
-  .sidebar-collapse-toggle-btn {
+  .sidebar-desktop-toggle-btn {
     display: none !important;
+  }
+
+  .sidebar-mobile-close-btn {
+    display: flex !important;
   }
 
   .main-wrapper {
@@ -1744,6 +1880,7 @@
 
   .mobile-drawer-overlay.open {
     display: block;
+    z-index: 45;
   }
 
   .mobile-menu-btn {

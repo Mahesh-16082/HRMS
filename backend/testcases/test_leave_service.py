@@ -415,8 +415,9 @@ def test_10_rejected_leave_does_not_reduce_balance(setup_users_and_employees, db
 
     # Sick balance must still be 15.0 available, 0.0 used
     as_user(users["emp1_user"])
+    current_year = datetime.now(timezone.utc).year
     b_data = client.get("/api/leave/balances/me").json()["balances"]
-    sick_b = next(b for b in b_data if b["leave_type"]["code"] == "SICK")
+    sick_b = next(b for b in b_data if b["leave_type"]["code"] == "SICK" and b["year"] == current_year)
     assert sick_b["used"] == 0.0
     assert sick_b["available"] == 15.0
 
@@ -443,8 +444,9 @@ def test_11_cancelled_leave_does_not_reduce_balance(setup_users_and_employees, d
     assert cancel_res.json()["status"] == "CANCELLED"
 
     # Sick balance unchanged
+    current_year = datetime.now(timezone.utc).year
     b_data = client.get("/api/leave/balances/me").json()["balances"]
-    sick_b = next(b for b in b_data if b["leave_type"]["code"] == "SICK")
+    sick_b = next(b for b in b_data if b["leave_type"]["code"] == "SICK" and b["year"] == current_year)
     assert sick_b["used"] == 0.0
     assert sick_b["available"] == 15.0
 

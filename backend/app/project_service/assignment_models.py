@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.database import Base
 from app.employee_service.models import Employee
 from app.project_service.models import Project
+from app.project_service.role_models import ProjectRole
 
 
 class ProjectAssignment(Base):
@@ -29,6 +30,12 @@ class ProjectAssignment(Base):
         index=True,
     )
 
+    role_id: Mapped[int] = mapped_column(
+        ForeignKey("project_roles.id"),
+        nullable=False,
+        index=True,
+    )
+
     assigned_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -41,6 +48,17 @@ class ProjectAssignment(Base):
         lazy="joined",
     )
 
+    employee = relationship(
+        "Employee",
+        foreign_keys=[employee_id],
+        lazy="joined",
+    )
+
+    role = relationship(
+        "ProjectRole",
+        foreign_keys=[role_id],
+        lazy="joined",
+    )
 
     __table_args__ = (
         UniqueConstraint(

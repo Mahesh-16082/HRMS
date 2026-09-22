@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/common/Sidebar";
 import Header from "../components/common/Header";
@@ -10,6 +10,18 @@ export default function DashboardLayout() {
   const [isCollapsed, setIsCollapsed] = useState(() => {
     return localStorage.getItem("hrms_sidebar_collapsed") === "true";
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+    if (mobileMenuOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [mobileMenuOpen]);
 
   const toggleCollapse = () => {
     setIsCollapsed((prev) => {

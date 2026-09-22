@@ -18,6 +18,7 @@ def generate_project_code(db: Session) -> str:
         existing_project = repository.get_project_by_code(
             db,
             project_code,
+            include_deleted=True,
         )
 
         if not existing_project:
