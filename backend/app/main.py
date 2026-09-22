@@ -6,6 +6,7 @@ from app.employee_service.router import router as employee_router
 from app.attendance_service.router import router as attendance_router
 from app.project_service.router import router as project_router
 from app.project_service.assignment_router import router as project_assignment_router
+from app.leave_service.router import router as leave_router
 
 app = FastAPI(
     title="HRMS Backend",
@@ -30,6 +31,7 @@ app.include_router(employee_router)
 app.include_router(attendance_router)
 app.include_router(project_router)
 app.include_router(project_assignment_router)
+app.include_router(leave_router)
 
 @app.get("/")
 def root():

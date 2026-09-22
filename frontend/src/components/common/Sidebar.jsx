@@ -53,9 +53,9 @@ export default function Sidebar({
     { label: "Work Reports", to: "#", icon: WorkReportsIcon, functional: false },
     { label: "Complaints", to: "#", icon: ComplaintsIcon, functional: false },
     { label: "Attendance", to: "/hr/attendance", icon: AttendanceIcon, functional: true },
-    { label: "Leave Requests", to: "#", icon: LeaveRequestsIcon, functional: false },
-    { label: "Leave Types", to: "#", icon: LeaveTypesIcon, functional: false },
-    { label: "Leave Balances", to: "#", icon: LeaveBalancesIcon, functional: false },
+    { label: "Leave Requests", to: "/hr/leave-requests", icon: LeaveRequestsIcon, functional: true },
+    { label: "Leave Types", to: "/hr/leave-types", icon: LeaveTypesIcon, functional: true },
+    { label: "Leave Balances", to: "/hr/leave-balances", icon: LeaveBalancesIcon, functional: true },
     { label: "Audit Logs", to: "#", icon: AuditLogsIcon, functional: false },
     { label: "Notifications", to: "#", icon: NotificationsIcon, functional: false },
   ];
@@ -69,7 +69,7 @@ export default function Sidebar({
     { label: "Work Reports", to: "#", icon: WorkReportsIcon, functional: false },
     { label: "Complaints", to: "#", icon: ComplaintsIcon, functional: false },
     { label: "Attendance", to: "/employee/attendance", icon: AttendanceIcon, functional: true },
-    { label: "Apply for Leave", to: "#", icon: LeaveRequestsIcon, functional: false },
+    { label: "Apply for Leave", to: "/employee/apply-leave", icon: LeaveRequestsIcon, functional: true },
     { label: "Notifications", to: "#", icon: NotificationsIcon, functional: false },
   ];
 

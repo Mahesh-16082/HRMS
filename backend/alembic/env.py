@@ -14,6 +14,7 @@ from app.employee_service.models import Employee
 from app.attendance_service.models import Attendance
 from app.project_service.models import Project
 from app.project_service.assignment_models import ProjectAssignment
+from app.leave_service.models import LeaveType, LeaveBalance, LeaveRequest
 
 config = context.config
 

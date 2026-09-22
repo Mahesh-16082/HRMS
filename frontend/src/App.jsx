@@ -15,6 +15,7 @@ import EmployeeDashboard from "./pages/employee/EmployeeDashboard";
 import EmployeeProfile from "./pages/employee/EmployeeProfile";
 import EmployeeAttendance from "./pages/employee/EmployeeAttendance";
 import EmployeeProjects from "./pages/employee/EmployeeProjects";
+import EmployeeApplyLeave from "./pages/employee/EmployeeApplyLeave";
 
 // HR Pages
 import HRDashboard from "./pages/hr/HRDashboard";
@@ -22,6 +23,9 @@ import HREmployees from "./pages/hr/HREmployees";
 import HRProjects from "./pages/hr/HRProjects";
 import HRAttendance from "./pages/hr/HRAttendance";
 import HRProfile from "./pages/hr/HRProfile";
+import LeaveRequests from "./pages/hr/LeaveRequests";
+import LeaveTypes from "./pages/hr/LeaveTypes";
+import LeaveBalances from "./pages/hr/LeaveBalances";
 
 import { getAuthToken } from "./api/apiClient";
 
@@ -57,6 +61,7 @@ function App() {
                 <Route path="/employee/profile" element={<EmployeeProfile />} />
                 <Route path="/employee/attendance" element={<EmployeeAttendance />} />
                 <Route path="/employee/projects" element={<EmployeeProjects />} />
+                <Route path="/employee/apply-leave" element={<EmployeeApplyLeave />} />
               </Route>
             </Route>
 
@@ -68,6 +73,9 @@ function App() {
                 <Route path="/hr/projects" element={<HRProjects />} />
                 <Route path="/hr/attendance" element={<HRAttendance />} />
                 <Route path="/hr/profile" element={<HRProfile />} />
+                <Route path="/hr/leave-requests" element={<LeaveRequests />} />
+                <Route path="/hr/leave-types" element={<LeaveTypes />} />
+                <Route path="/hr/leave-balances" element={<LeaveBalances />} />
               </Route>
             </Route>
 

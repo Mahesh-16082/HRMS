@@ -137,6 +137,12 @@ def create_employee(
         db.commit()
         db.refresh(employee)
 
+        # --------------------------------------------------------
+        # 6. Auto-allocate current year's leave balances (SICK=15, CASUAL=15)
+        # --------------------------------------------------------
+        from app.leave_service.service import ensure_employee_yearly_balances
+        ensure_employee_yearly_balances(db, employee.id)
+
     except Exception:
         db.rollback()
         raise

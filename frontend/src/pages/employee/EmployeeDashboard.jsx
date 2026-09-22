@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { projectApi } from "../../api/projectApi";
+import { leaveApi } from "../../api/leaveApi";
 import HeroGreeting from "../../components/common/HeroGreeting";
 import StatCard from "../../components/common/StatCard";
 import SectionHeader from "../../components/common/SectionHeader";
@@ -22,6 +23,11 @@ export default function EmployeeDashboard() {
 
   const [projectCount, setProjectCount] = useState(null);
   const [loadingProjects, setLoadingProjects] = useState(true);
+
+  // Leave Service data state
+  const [leaveBalances, setLeaveBalances] = useState([]);
+  const [loadingBalances, setLoadingBalances] = useState(true);
+  const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
   // Fetch actual project assignments for the authenticated employee
   useEffect(() => {
@@ -45,6 +51,39 @@ export default function EmployeeDashboard() {
       isMounted = false;
     };
   }, []);
+
+  // Fetch actual leave balances for the authenticated employee
+  const loadLeaveBalances = useCallback(async () => {
+    try {
+      setLoadingBalances(true);
+      const data = await leaveApi.getMyBalances();
+      const rawBalances = data?.balances || [];
+      const currentYear = new Date().getFullYear();
+      const activeBalances = rawBalances.filter(
+        (b) =>
+          b.leave_type &&
+          b.leave_type.is_active !== false &&
+          b.leave_type.code !== "ANNUAL" &&
+          (!b.year || b.year === currentYear)
+      );
+      setLeaveBalances(activeBalances.length > 0 ? activeBalances : rawBalances.filter(b => b.leave_type?.is_active !== false && b.leave_type?.code !== "ANNUAL"));
+    } catch (err) {
+      console.warn("Could not load employee leave balances:", err.message);
+      setLeaveBalances([]);
+    } finally {
+      setLoadingBalances(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadLeaveBalances();
+  }, [loadLeaveBalances]);
+
+  // Calculate total available leave days across all active balances
+  const totalAvailableBalance = leaveBalances.reduce(
+    (sum, b) => sum + (Number(b.available) || 0),
+    0
+  );
 
   const employeeName = profile
     ? `${profile.first_name} ${profile.last_name}`
@@ -71,7 +110,8 @@ export default function EmployeeDashboard() {
         />
         <StatCard
           icon={CalendarIcon}
-          number={12}
+          number={loadingBalances ? null : (totalAvailableBalance !== null && totalAvailableBalance !== undefined ? totalAvailableBalance : 0)}
+          loading={loadingBalances}
           label="Leave Balance"
           color="purple"
         />
@@ -105,21 +145,76 @@ export default function EmployeeDashboard() {
             </span>
           </div>
 
-          <div className="leave-quota-card-inner">
-            <div className="leave-quota-icon">
-              <CalendarIcon size={28} />
+          {loadingBalances ? (
+            <div style={{ padding: "28px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
+              Loading leave entitlements...
             </div>
-            <div className="leave-quota-numbers">
-              <span className="leave-quota-title">Sick Leave</span>
-              <span className="leave-quota-val">12.0</span>
-              <span className="leave-quota-sub">Days Remaining Available</span>
+          ) : leaveBalances.length === 0 ? (
+            <div style={{ padding: "24px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
+              <span style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-heading)" }}>
+                No Leave Entitlements Assigned
+              </span>
+              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                No active leave quotas are configured for this year. Please contact HR.
+              </span>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* If multiple leave types exist, render type selector tabs */}
+              {leaveBalances.length > 1 && (
+                <div style={{ display: "flex", gap: "6px", margin: "10px 0 4px", flexWrap: "wrap" }}>
+                  {leaveBalances.map((b, idx) => (
+                    <button
+                      key={b.id}
+                      type="button"
+                      onClick={() => setSelectedBalanceIndex(idx)}
+                      style={{
+                        padding: "3px 10px",
+                        fontSize: "11px",
+                        borderRadius: "12px",
+                        border: "1px solid",
+                        borderColor: selectedBalanceIndex === idx ? "var(--primary)" : "var(--border-color)",
+                        background: selectedBalanceIndex === idx ? "var(--primary)" : "transparent",
+                        color: selectedBalanceIndex === idx ? "#fff" : "var(--text-muted)",
+                        cursor: "pointer",
+                        fontWeight: selectedBalanceIndex === idx ? "600" : "400",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      {b.leave_type?.name || `Type #${b.leave_type_id}`}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-          <div className="leave-quota-footer">
-            <span>Total Allocated: 12.00</span>
-            <span>Used: 0.00</span>
-          </div>
+              {(() => {
+                const currentBalance = leaveBalances[selectedBalanceIndex] || leaveBalances[0];
+                return (
+                  <>
+                    <div className="leave-quota-card-inner">
+                      <div className="leave-quota-icon">
+                        <CalendarIcon size={28} />
+                      </div>
+                      <div className="leave-quota-numbers">
+                        <span className="leave-quota-title">
+                          {currentBalance.leave_type?.name || "Leave Quota"}
+                        </span>
+                        <span className="leave-quota-val">
+                          {Number(currentBalance.available).toFixed(1)}
+                        </span>
+                        <span className="leave-quota-sub">Days Remaining Available</span>
+                      </div>
+                    </div>
+
+                    <div className="leave-quota-footer">
+                      <span>Total Allocated: {Number(currentBalance.allocated).toFixed(2)}</span>
+                      <span>Used: {Number(currentBalance.used).toFixed(2)}</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          )}
         </div>
 
         {/* My Schedule */}
@@ -160,10 +255,10 @@ export default function EmployeeDashboard() {
         </div>
 
         <div className="employee-actions-grid">
-          {/* Apply for Leave (Placeholder) */}
-          <div
+          {/* Apply for Leave */}
+          <Link
+            to="/employee/apply-leave"
             className="employee-action-card"
-            onClick={() => alert("Leave Service is scheduled for a future update.")}
           >
             <div className="employee-action-icon-wrap" style={{ background: "#dcfce7", color: "#16a34a" }}>
               <CalendarIcon size={22} />
@@ -175,7 +270,7 @@ export default function EmployeeDashboard() {
             <button className="governance-arrow-btn" aria-label="Apply for Leave">
               <ArrowRight size={14} />
             </button>
-          </div>
+          </Link>
 
           {/* Daily Attendance (Fully Functional!) */}
           <Link to="/employee/attendance" className="employee-action-card">

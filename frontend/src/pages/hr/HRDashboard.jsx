@@ -14,7 +14,6 @@ import {
   AnnouncementsIcon,
   WorkReportsIcon,
   MessageSquareIcon,
-  PlaneIcon,
   NotificationsIcon,
   ShieldIcon,
   ArrowRight,
@@ -155,17 +154,6 @@ export default function HRDashboard() {
             </div>
             <span className="quick-action-label">Mark Attendance</span>
           </Link>
-
-          {/* Apply Leave */}
-          <div
-            className="quick-action-circle-item"
-            onClick={() => alert("Leave Service is scheduled for a future update.")}
-          >
-            <div className="quick-action-round-btn" style={{ background: "#f3e8ff", color: "#9333ea" }}>
-              <PlaneIcon size={24} />
-            </div>
-            <span className="quick-action-label">Apply Leave</span>
-          </div>
 
           {/* View Audit Logs */}
           <div
