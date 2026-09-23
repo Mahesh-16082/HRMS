@@ -244,6 +244,24 @@ def reject_leave_request(
     )
 
 
+@router.patch(
+    "/requests/{request_id}/revoke",
+    response_model=LeaveRequestResponse,
+)
+def revoke_leave_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """HR revokes an approved leave request, restoring employee balance."""
+    require_hr(current_user)
+    return service.revoke_leave_request(
+        db=db,
+        reviewer_user_id=current_user.id,
+        request_id=request_id,
+    )
+
+
 # ============================================================
 # HR ENDPOINTS: LEAVE BALANCES
 # ============================================================

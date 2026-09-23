@@ -25,6 +25,7 @@ class LeaveRequestStatus(str, Enum):
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
     CANCELLED = "CANCELLED"
+    REVOKED = "REVOKED"
 
 
 class LeaveType(Base):

@@ -348,11 +348,15 @@ export default function HRWorkReports() {
               }}
             >
               <option value="">All Projects</option>
-              {projects.map((proj) => (
-                <option key={proj.id} value={proj.id}>
-                  {proj.name}
-                </option>
-              ))}
+              {projects.map((proj) => {
+                const pId = proj.id || proj.project_id;
+                const pName = proj.project_name || proj.name || proj.title || `Project #${pId}`;
+                return (
+                  <option key={pId} value={pId}>
+                    {pName}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -447,7 +451,7 @@ export default function HRWorkReports() {
                         </div>
                       </td>
                       <td style={{ fontSize: "12.5px" }}>
-                        {report.project ? report.project.name : <span style={{ color: "var(--text-muted)" }}>Internal</span>}
+                        {report.project ? (report.project.project_name || report.project.name) : <span style={{ color: "var(--text-muted)" }}>Internal</span>}
                       </td>
                       <td style={{ fontWeight: "600", whiteSpace: "nowrap" }}>
                         {report.hours_worked} hrs

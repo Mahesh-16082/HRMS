@@ -605,7 +605,7 @@ export default function EmployeeWorkReports() {
                       </div>
                     </td>
                     <td style={{ fontSize: "12.5px" }}>
-                      {report.project ? report.project.name : <span style={{ color: "var(--text-muted)" }}>Internal</span>}
+                      {report.project ? (report.project.project_name || report.project.name) : <span style={{ color: "var(--text-muted)" }}>Internal</span>}
                     </td>
                     <td style={{ fontWeight: "600", whiteSpace: "nowrap" }}>
                       {report.hours_worked} hrs

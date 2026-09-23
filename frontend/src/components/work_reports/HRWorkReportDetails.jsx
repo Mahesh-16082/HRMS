@@ -65,8 +65,6 @@ export default function HRWorkReportDetails({
   };
 
   const handleApprove = async () => {
-    if (!window.confirm("Approve this daily work report?")) return;
-
     try {
       setReviewing(true);
       setError("");
@@ -170,7 +168,7 @@ export default function HRWorkReportDetails({
               <span className="wr-detail-label">Project</span>
               <span className="wr-detail-value" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                 <ProjectsIcon size={15} />
-                {report.project ? report.project.name : "Internal / Administrative"}
+                {report.project ? (report.project.project_name || report.project.name) : "Internal / Administrative"}
               </span>
             </div>
 

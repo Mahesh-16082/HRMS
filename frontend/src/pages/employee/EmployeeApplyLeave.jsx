@@ -27,6 +27,32 @@ export default function EmployeeApplyLeave() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  // Reload employee's balances
+  const reloadBalances = useCallback(async () => {
+    try {
+      const balancesRes = await leaveApi.getMyBalances();
+      const rawBalances = balancesRes?.balances || [];
+      const currentYear = new Date().getFullYear();
+      const balances = rawBalances.filter(
+        (b) =>
+          b.leave_type &&
+          b.leave_type.is_active !== false &&
+          b.leave_type.code !== "ANNUAL" &&
+          (!b.year || b.year === currentYear)
+      );
+      setUserBalances(
+        balances.length > 0
+          ? balances
+          : rawBalances.filter(
+              (b) => b.leave_type?.is_active !== false && b.leave_type?.code !== "ANNUAL"
+            )
+      );
+    } catch (err) {
+      console.error("Failed to load balances:", err);
+    }
+  }, []);
 
   // Load active leave types and employee's balances
   const loadInitialData = useCallback(async () => {
@@ -56,10 +82,6 @@ export default function EmployeeApplyLeave() {
 
       setLeaveTypes(types);
       setUserBalances(balances.length > 0 ? balances : rawBalances.filter(b => b.leave_type?.is_active !== false && b.leave_type?.code !== "ANNUAL"));
-
-      if (types.length > 0) {
-        setSelectedTypeId(String(types[0].id));
-      }
     } catch (err) {
       setError(err.message || "Failed to load leave configuration.");
     } finally {
@@ -92,6 +114,17 @@ export default function EmployeeApplyLeave() {
     (sum, b) => sum + (Number(b.available) || 0),
     0
   );
+
+  const handleSuccessOk = () => {
+    setShowSuccessModal(false);
+    setSelectedTypeId("");
+    setStartDate("");
+    setEndDate("");
+    setReason("");
+    setError("");
+    setSuccessMsg("");
+    reloadBalances();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,15 +161,8 @@ export default function EmployeeApplyLeave() {
         reason: reason.trim(),
       });
 
-      setSuccessMsg("Leave request submitted successfully! Status: PENDING. Redirecting to dashboard...");
-
-      // Reload balances
-      const updatedBalancesRes = await leaveApi.getMyBalances();
-      setUserBalances(updatedBalancesRes?.balances || []);
-
-      setTimeout(() => {
-        navigate("/employee/dashboard");
-      }, 1600);
+      await reloadBalances();
+      setShowSuccessModal(true);
     } catch (err) {
       setError(err.message || "Failed to submit leave request.");
     } finally {
@@ -170,7 +196,7 @@ export default function EmployeeApplyLeave() {
         />
         <StatCard
           icon={ClockIcon}
-          number={loading ? null : (selectedBalance ? Number(selectedBalance.available).toFixed(1) : "0.0")}
+          number={loading ? null : (selectedBalance ? Number(selectedBalance.available).toFixed(1) : "—")}
           loading={loading}
           label="Selected Policy Available"
           color="green"
@@ -228,6 +254,7 @@ export default function EmployeeApplyLeave() {
                   onChange={(e) => setSelectedTypeId(e.target.value)}
                   disabled={submitting}
                 >
+                  <option value="">Select a leave policy...</option>
                   {leaveTypes.map((type) => (
                     <option key={type.id} value={type.id}>
                       {type.name} ({type.code}) — Quota: {type.annual_quota} days/year
@@ -256,11 +283,11 @@ export default function EmployeeApplyLeave() {
                       Available Balance: {selectedBalance.available} days
                     </span>
                   </div>
-                ) : (
+                ) : selectedTypeId ? (
                   <div style={{ fontSize: "12px", color: "#b45309", marginTop: "4px" }}>
                     Note: No leave balance record found for this policy in current calendar year.
                   </div>
-                )}
+                ) : null}
               </div>
 
               {/* Date Range Selection */}
@@ -363,6 +390,88 @@ export default function EmployeeApplyLeave() {
               </div>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Success Confirmation Modal */}
+      {showSuccessModal && (
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="leave-success-modal-title"
+          onClick={handleSuccessOk}
+        >
+          <div
+            className="modal-card"
+            style={{ maxWidth: "460px", textAlign: "center" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div
+              className="modal-body"
+              style={{
+                padding: "36px 28px 28px",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "14px",
+                textAlign: "center",
+              }}
+            >
+              <div
+                style={{
+                  width: "56px",
+                  height: "56px",
+                  borderRadius: "50%",
+                  background: "rgba(22, 163, 74, 0.12)",
+                  color: "#16a34a",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 0 0 6px rgba(22, 163, 74, 0.05)",
+                }}
+              >
+                <CheckCircleIcon size={32} />
+              </div>
+
+              <h3
+                id="leave-success-modal-title"
+                className="modal-title"
+                style={{
+                  fontSize: "19px",
+                  fontWeight: 700,
+                  color: "var(--text-heading)",
+                  margin: "4px 0 0",
+                }}
+              >
+                Leave Request Submitted Successfully
+              </h3>
+
+              <p
+                style={{
+                  fontSize: "14px",
+                  color: "var(--text-muted)",
+                  lineHeight: 1.55,
+                  margin: 0,
+                  maxWidth: "380px",
+                }}
+              >
+                Your leave request has been submitted successfully and sent to HR for approval.
+              </p>
+
+              <div style={{ marginTop: "10px", width: "100%", display: "flex", justifyContent: "center" }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ minWidth: "130px", padding: "10px 24px", fontSize: "14px", fontWeight: 600 }}
+                  onClick={handleSuccessOk}
+                  autoFocus
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

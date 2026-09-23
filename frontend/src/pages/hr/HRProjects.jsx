@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { projectApi } from "../../api/projectApi";
 import { employeeApi } from "../../api/employeeApi";
 import SectionHeader from "../../components/common/SectionHeader";
@@ -10,6 +11,7 @@ import {
 } from "../../components/common/FeedbackStates";
 import {
   ProjectsIcon,
+  ProjectRolesIcon,
   ClipboardCheckIcon,
   UsersIcon,
   PlusIcon,
@@ -21,6 +23,7 @@ import {
 } from "../../components/icons/Icons";
 
 export default function HRProjects() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [totalProjects, setTotalProjects] = useState(null);
@@ -300,12 +303,23 @@ export default function HRProjects() {
 
   return (
     <div className="page-container">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
         <SectionHeader title="Projects &amp; Assignments" />
-        <button className="btn btn-primary" onClick={handleOpenCreate}>
-          <PlusIcon size={16} />
-          <span>Create Project</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button className="btn btn-primary" onClick={handleOpenCreate}>
+            <PlusIcon size={16} />
+            <span>Create Project</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate("/hr/project-roles")}
+            title="Manage Project Roles"
+          >
+            <ProjectRolesIcon size={16} />
+            <span>Project Roles</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}

@@ -188,12 +188,28 @@ def get_employee_by_user_id(
     )
 
     if not employee:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.role == "hr":
+            # Auto-provision HR employee record if not yet created
+            employee = Employee(
+                user_id=user.id,
+                employee_code=generate_next_employee_code(db),
+                first_name=(user.full_name.split()[0] if user.full_name else "HR"),
+                last_name=(" ".join(user.full_name.split()[1:]) if user.full_name and len(user.full_name.split()) > 1 else "Administrator"),
+                employment_status=EmploymentStatus.ACTIVE,
+            )
+            db.add(employee)
+            db.commit()
+            db.refresh(employee)
+            return employee
+
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Employee profile not found",
         )
 
     return employee
+
 
 
 # ============================================================
@@ -469,6 +485,7 @@ def update_self_profile(
     db: Session,
     user_id: int,
     data: EmployeeProfileUpdate,
+    is_hr: bool = False,
 ) -> Employee:
 
     employee = get_employee_by_user_id(
@@ -476,15 +493,54 @@ def update_self_profile(
         user_id,
     )
 
-    update_data = data.model_dump(
+    update_dict = data.model_dump(
         exclude_unset=True
     )
 
-    return repository.update_employee(
-        db,
-        employee,
-        update_data,
-    )
+    # 1. Handle Email update
+    if "email" in update_dict:
+        new_email = update_dict.pop("email")
+        if not is_hr:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Employees cannot change their email address. Please contact HR.",
+            )
+        if new_email:
+            new_email_clean = str(new_email).strip().lower()
+            if new_email_clean != employee.user.email.lower():
+                existing = (
+                    db.query(User)
+                    .filter(User.email == new_email_clean, User.id != employee.user_id)
+                    .first()
+                )
+                if existing:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="A user with this email address already exists.",
+                    )
+                employee.user.email = new_email_clean
+                employee.user.updated_at = datetime.now(timezone.utc)
+
+    # 2. Update allowed personal Employee fields
+    allowed_employee_fields = {"first_name", "last_name", "phone", "date_of_birth", "address"}
+    for field, val in update_dict.items():
+        if field in allowed_employee_fields:
+            if isinstance(val, str):
+                val = val.strip()
+                if not val and field in ("phone", "address"):
+                    val = None
+            setattr(employee, field, val)
+
+    # 3. Synchronize user.full_name
+    employee.user.full_name = f"{employee.first_name} {employee.last_name}".strip()
+    employee.updated_at = datetime.now(timezone.utc)
+
+    db.commit()
+    db.refresh(employee)
+    db.refresh(employee.user)
+
+    return employee
+
 
 
 # ============================================================

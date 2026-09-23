@@ -6,8 +6,8 @@ export default function ProtectedRoute({ allowedRoles = [] }) {
   const { token, loading, isInitializing, user } = useAuth();
   const storedToken = getAuthToken();
 
-  // If AuthContext is initializing or storedToken exists but user is not resolved yet, do NOT redirect to /login
-  if (isInitializing || loading || (storedToken && !user)) {
+  // If AuthContext is initializing for an existing stored session, show loading spinner
+  if (isInitializing || (storedToken && loading)) {
     return (
       <div style={{
         display: "flex",

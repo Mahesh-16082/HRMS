@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { leaveApi } from "../../api/leaveApi";
 import SectionHeader from "../../components/common/SectionHeader";
 import StatCard from "../../components/common/StatCard";
@@ -9,6 +10,7 @@ import {
 } from "../../components/common/FeedbackStates";
 import {
   LeaveRequestsIcon,
+  LeaveTypesIcon,
   CheckCircleIcon,
   ClockIcon,
   CloseIcon,
@@ -17,6 +19,7 @@ import {
 } from "../../components/icons/Icons";
 
 export default function LeaveRequests() {
+  const navigate = useNavigate();
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,21 +57,39 @@ export default function LeaveRequests() {
     loadRequests();
   }, [loadRequests]);
 
-  // Handle Approve
+  // Handle Approve (no browser confirmation dialog, executes immediately)
   const handleApprove = async (request) => {
-    if (!window.confirm(`Approve leave request for ${request.number_of_days} day(s) for ${request.employee?.first_name} ${request.employee?.last_name}?`)) {
-      return;
-    }
-
     try {
       setActionLoadingId(request.id);
       setError("");
-      await leaveApi.approveRequest(request.id);
+      const updated = await leaveApi.approveRequest(request.id);
+      setRequests((prev) =>
+        prev.map((r) => (r.id === request.id ? { ...r, ...updated, status: "APPROVED" } : r))
+      );
       setSuccessMsg(`Leave request #${request.id} approved successfully.`);
       loadRequests();
       setTimeout(() => setSuccessMsg(""), 4000);
     } catch (err) {
       setError(err.message || "Failed to approve leave request.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  // Handle Revoke
+  const handleRevoke = async (request) => {
+    try {
+      setActionLoadingId(request.id);
+      setError("");
+      const updated = await leaveApi.revokeRequest(request.id);
+      setRequests((prev) =>
+        prev.map((r) => (r.id === request.id ? { ...r, ...updated, status: "REVOKED" } : r))
+      );
+      setSuccessMsg("Leave request revoked successfully.");
+      loadRequests();
+      setTimeout(() => setSuccessMsg(""), 4000);
+    } catch (err) {
+      setError(err.message || "Failed to revoke leave request.");
     } finally {
       setActionLoadingId(null);
     }
@@ -141,6 +162,8 @@ export default function LeaveRequests() {
         return { className: "badge-cancelled", label: "REJECTED" };
       case "CANCELLED":
         return { className: "badge-on_hold", label: "CANCELLED" };
+      case "REVOKED":
+        return { className: "badge-on_notice", label: "REVOKED" };
       case "PENDING":
       default:
         return { className: "badge-planned", label: "PENDING" };
@@ -152,7 +175,20 @@ export default function LeaveRequests() {
 
   return (
     <div className="page-container">
-      <SectionHeader title="Employee Leave Requests" />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
+        <SectionHeader title="Employee Leave Requests" />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate("/hr/leave-types")}
+            title="Manage Leave Types"
+          >
+            <LeaveTypesIcon size={16} />
+            <span>Leave Types</span>
+          </button>
+        </div>
+      </div>
 
       {/* Overview Stat Cards */}
       <div className="stats-grid" style={{ marginBottom: "20px" }}>
@@ -223,6 +259,7 @@ export default function LeaveRequests() {
               <option value="PENDING">Pending Only</option>
               <option value="APPROVED">Approved</option>
               <option value="REJECTED">Rejected</option>
+              <option value="REVOKED">Revoked</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
@@ -247,6 +284,7 @@ export default function LeaveRequests() {
                 <tr>
                   <th>Employee</th>
                   <th>Leave Type</th>
+                  <th>Leave Balance</th>
                   <th>Timeline</th>
                   <th>Days</th>
                   <th>Reason</th>
@@ -282,6 +320,31 @@ export default function LeaveRequests() {
                         >
                           {req.leave_type?.name || `Type #${req.leave_type_id}`}
                         </span>
+                      </td>
+                      <td>
+                        {req.leave_balance ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <div>
+                              <span
+                                style={{
+                                  fontSize: "12.5px",
+                                  fontWeight: "700",
+                                  color: req.leave_balance.available > 0 ? "var(--text-heading)" : "#dc2626",
+                                }}
+                              >
+                                {req.leave_balance.available}
+                              </span>
+                              <span style={{ fontSize: "11px", color: "var(--text-muted)", marginLeft: "4px" }}>
+                                remaining
+                              </span>
+                            </div>
+                            <div style={{ fontSize: "10.5px", color: "var(--text-subtle)" }}>
+                              Alloc: {req.leave_balance.allocated} • Used: {req.leave_balance.used}
+                            </div>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: "11px", color: "var(--text-subtle)" }}>—</span>
+                        )}
                       </td>
                       <td>
                         <div style={{ fontSize: "12px", color: "var(--text-main)" }}>
@@ -352,6 +415,27 @@ export default function LeaveRequests() {
                               Reject
                             </button>
                           </div>
+                        ) : req.status === "APPROVED" ? (
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{
+                              padding: "4px 10px",
+                              fontSize: "11px",
+                              color: "#b45309",
+                              borderColor: "#f59e0b",
+                              background: "rgba(245, 158, 11, 0.08)",
+                              fontWeight: 600,
+                            }}
+                            onClick={() => handleRevoke(req)}
+                            disabled={isActionLoading}
+                          >
+                            {isActionLoading ? "Revoking..." : "Revoke"}
+                          </button>
+                        ) : req.status === "REVOKED" ? (
+                          <span style={{ fontSize: "11px", color: "var(--text-subtle)", fontWeight: 500 }}>
+                            Revoked
+                          </span>
                         ) : (
                           <span style={{ fontSize: "11px", color: "var(--text-subtle)" }}>
                             Processed
@@ -401,6 +485,44 @@ export default function LeaveRequests() {
 
             <form onSubmit={handleConfirmReject}>
               <div className="modal-body">
+                <div
+                  style={{
+                    background: "var(--bg-card)",
+                    border: "1px solid var(--border-color)",
+                    borderRadius: "8px",
+                    padding: "10px 14px",
+                    marginBottom: "14px",
+                    fontSize: "12px",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "8px",
+                  }}
+                >
+                  <div>
+                    <span style={{ color: "var(--text-muted)" }}>Leave Type: </span>
+                    <strong style={{ color: "var(--text-heading)" }}>
+                      {rejectingRequest.leave_type?.name || `Type #${rejectingRequest.leave_type_id}`}
+                    </strong>
+                  </div>
+                  <div>
+                    <span style={{ color: "var(--text-muted)" }}>Requested: </span>
+                    <strong style={{ color: "var(--text-heading)" }}>
+                      {rejectingRequest.number_of_days} day{rejectingRequest.number_of_days === 1 ? "" : "s"}
+                    </strong>
+                  </div>
+                  <div style={{ gridColumn: "span 2" }}>
+                    <span style={{ color: "var(--text-muted)" }}>Remaining Balance: </span>
+                    <strong style={{ color: rejectingRequest.leave_balance?.available > 0 ? "#16a34a" : "#dc2626" }}>
+                      {rejectingRequest.leave_balance ? `${rejectingRequest.leave_balance.available} days` : "—"}
+                    </strong>
+                    {rejectingRequest.leave_balance && (
+                      <span style={{ color: "var(--text-subtle)", fontSize: "11px", marginLeft: "6px" }}>
+                        (Allocated: {rejectingRequest.leave_balance.allocated}, Used: {rejectingRequest.leave_balance.used})
+                      </span>
+                    )}
+                  </div>
+                </div>
+
                 {rejectionError && (
                   <div
                     style={{

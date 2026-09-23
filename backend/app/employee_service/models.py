@@ -133,6 +133,11 @@ class Employee(Base):
         lazy="joined",
     )
 
+    @property
+    def email(self) -> str | None:
+        return self.user.email if self.user else None
+
+
 
 Index(
     "ix_employees_employment_status",

@@ -692,3 +692,246 @@ def test_hr_can_view_and_manage_balances(setup_users_and_employees, db_session: 
 
     # Revert back to 15.0
     client.put(f"/api/leave/balances/{target_bal['id']}", json={"allocated": 15.0})
+
+
+def test_revoke_approved_leave_restores_exact_balance_and_prevents_double_revoke(setup_users_and_employees, db_session: Session):
+    users = setup_users_and_employees
+    emp1 = users["emp1_profile"]
+    casual = users["casual_type"]
+    current_year = datetime.now(timezone.utc).year
+
+    # Check baseline balance
+    bal_before = leave_repo.get_leave_balance(db_session, emp1.id, casual.id, current_year)
+    used_initial = bal_before.used
+    avail_initial = bal_before.available
+
+    # 1. Employee creates a 4-day leave request
+    today = date(current_year, 11, 20)
+    as_user(users["emp1_user"])
+    create_res = client.post("/api/leave/requests", json={
+        "leave_type_id": casual.id,
+        "start_date": today.isoformat(),
+        "end_date": (today + timedelta(days=3)).isoformat(),  # 4 calendar days: Nov 20, 21, 22, 23
+        "reason": "4-day family event",
+    })
+    assert create_res.status_code == 201
+    req_data = create_res.json()
+    assert req_data["number_of_days"] == 4.0
+    req_id = req_data["id"]
+
+    # 2. HR approves the 4-day request -> balance deducted by 4
+    as_user(users["hr_user"])
+    approve_res = client.patch(f"/api/leave/requests/{req_id}/approve")
+    assert approve_res.status_code == 200
+    assert approve_res.json()["status"] == "APPROVED"
+
+    db_session.expire_all()
+    bal_after_approve = leave_repo.get_leave_balance(db_session, emp1.id, casual.id, current_year)
+    assert bal_after_approve.used == round(used_initial + 4.0, 2)
+    assert bal_after_approve.available == round(avail_initial - 4.0, 2)
+
+    # 3. Employee attempts to revoke -> 403 Forbidden
+    as_user(users["emp1_user"])
+    emp_revoke_res = client.patch(f"/api/leave/requests/{req_id}/revoke")
+    assert emp_revoke_res.status_code == 403
+
+    # 4. HR revokes the approved request -> status becomes REVOKED, exact 4 days restored
+    as_user(users["hr_user"])
+    revoke_res = client.patch(f"/api/leave/requests/{req_id}/revoke")
+    assert revoke_res.status_code == 200
+    revoked_data = revoke_res.json()
+    assert revoked_data["status"] == "REVOKED"
+    assert revoked_data["reviewed_by"] == users["hr_user"].id
+
+    db_session.expire_all()
+    bal_after_revoke = leave_repo.get_leave_balance(db_session, emp1.id, casual.id, current_year)
+    assert bal_after_revoke.used == used_initial
+    assert bal_after_revoke.available == avail_initial
+
+    # 5. Double-revoke attempt -> 400 Bad Request
+    double_revoke_res = client.patch(f"/api/leave/requests/{req_id}/revoke")
+    assert double_revoke_res.status_code == 400
+    assert "already been revoked" in double_revoke_res.json()["detail"]
+
+
+def test_revoke_invalid_statuses_and_1_day_leave(setup_users_and_employees, db_session: Session):
+    users = setup_users_and_employees
+    emp1 = users["emp1_profile"]
+    sick = users["sick_type"]
+    current_year = datetime.now(timezone.utc).year
+
+    # Check baseline balance
+    bal_before = leave_repo.get_leave_balance(db_session, emp1.id, sick.id, current_year)
+    used_initial = bal_before.used
+    avail_initial = bal_before.available
+
+    # 1. Create a 1-day leave request
+    day1 = date(current_year, 11, 10)
+    as_user(users["emp1_user"])
+    res1 = client.post("/api/leave/requests", json={
+        "leave_type_id": sick.id,
+        "start_date": day1.isoformat(),
+        "end_date": day1.isoformat(),  # 1 day
+        "reason": "Doctor appointment",
+    })
+    assert res1.status_code == 201
+    req1_id = res1.json()["id"]
+
+    # 2. Cannot revoke a PENDING request -> 400 Bad Request
+    as_user(users["hr_user"])
+    pending_revoke_res = client.patch(f"/api/leave/requests/{req1_id}/revoke")
+    assert pending_revoke_res.status_code == 400
+    assert "Only approved leave requests can be revoked" in pending_revoke_res.json()["detail"]
+
+    # 3. Reject the request -> Cannot revoke a REJECTED request -> 400 Bad Request
+    reject_res = client.patch(f"/api/leave/requests/{req1_id}/reject", json={"rejection_reason": "Not approved"})
+    assert reject_res.status_code == 200
+    rejected_revoke_res = client.patch(f"/api/leave/requests/{req1_id}/revoke")
+    assert rejected_revoke_res.status_code == 400
+    assert "Only approved leave requests can be revoked" in rejected_revoke_res.json()["detail"]
+
+    # 4. Create another 1-day request, cancel it as employee -> Cannot revoke CANCELLED -> 400
+    day2 = date(current_year, 11, 12)
+    as_user(users["emp1_user"])
+    res2 = client.post("/api/leave/requests", json={
+        "leave_type_id": sick.id,
+        "start_date": day2.isoformat(),
+        "end_date": day2.isoformat(),
+        "reason": "Dentist visit",
+    })
+    req2_id = res2.json()["id"]
+    cancel_res = client.patch(f"/api/leave/requests/me/{req2_id}/cancel")
+    assert cancel_res.status_code == 200
+
+    as_user(users["hr_user"])
+    cancelled_revoke_res = client.patch(f"/api/leave/requests/{req2_id}/revoke")
+    assert cancelled_revoke_res.status_code == 400
+    assert "Only approved leave requests can be revoked" in cancelled_revoke_res.json()["detail"]
+
+    # 5. Create a 1-day request, approve it, and revoke it -> exactly 1 day restored
+    day3 = date(current_year, 11, 15)
+    as_user(users["emp1_user"])
+    res3 = client.post("/api/leave/requests", json={
+        "leave_type_id": sick.id,
+        "start_date": day3.isoformat(),
+        "end_date": day3.isoformat(),
+        "reason": "Fever checkup",
+    })
+    req3_id = res3.json()["id"]
+
+    as_user(users["hr_user"])
+    client.patch(f"/api/leave/requests/{req3_id}/approve")
+    db_session.expire_all()
+    bal_after_appr = leave_repo.get_leave_balance(db_session, emp1.id, sick.id, current_year)
+    assert bal_after_appr.used == round(used_initial + 1.0, 2)
+    assert bal_after_appr.available == round(avail_initial - 1.0, 2)
+
+    rev_res = client.patch(f"/api/leave/requests/{req3_id}/revoke")
+    assert rev_res.status_code == 200
+    db_session.expire_all()
+    bal_after_rev = leave_repo.get_leave_balance(db_session, emp1.id, sick.id, current_year)
+    assert bal_after_rev.used == used_initial
+    assert bal_after_rev.available == avail_initial
+
+
+def test_hr_leave_requests_surfaces_exact_employee_leave_balance(setup_users_and_employees, db_session: Session):
+    """
+    Verifies:
+    1. HR listing leave requests surfaces employee leave balance strictly for the EXACT requested leave type.
+    2. employee_id + leave_type_id + request.start_date.year is matched.
+    3. Different employees and leave types have independent and accurate balances.
+    4. Approve updates returned leave_balance.
+    5. Revoke restores returned leave_balance.
+    6. Reject keeps leave_balance unchanged.
+    """
+    users = setup_users_and_employees
+    emp1 = users["emp1_profile"]
+    emp2 = users["emp2_profile"]
+    current_year = datetime.now(timezone.utc).year
+
+    casual = users["casual_type"]
+    sick = users["sick_type"]
+
+    # Initial balances for Casual and Sick
+    bal_emp1_casual = leave_repo.get_leave_balance(db_session, emp1.id, casual.id, current_year)
+    bal_emp2_sick = leave_repo.get_leave_balance(db_session, emp2.id, sick.id, current_year)
+
+    emp1_casual_avail_before = bal_emp1_casual.available
+    emp1_casual_used_before = bal_emp1_casual.used
+    emp2_sick_avail_before = bal_emp2_sick.available
+    emp2_sick_used_before = bal_emp2_sick.used
+
+    # Emp1 submits 2-day Casual Leave request (days 90 to 91 to avoid overlap with earlier tests)
+    t_base = date.today()
+    d1_start = t_base + timedelta(days=90)
+    d1_end = t_base + timedelta(days=91)
+    as_user(users["emp1_user"])
+    r1 = client.post("/api/leave/requests", json={
+        "leave_type_id": casual.id,
+        "start_date": d1_start.isoformat(),
+        "end_date": d1_end.isoformat(),
+        "reason": "Personal family event",
+    })
+    assert r1.status_code == 201
+    req1_id = r1.json()["id"]
+
+    # Emp2 submits 3-day Sick Leave request (days 95 to 97)
+    d2_start = t_base + timedelta(days=95)
+    d2_end = t_base + timedelta(days=97)
+    as_user(users["emp2_user"])
+    r2 = client.post("/api/leave/requests", json={
+        "leave_type_id": sick.id,
+        "start_date": d2_start.isoformat(),
+        "end_date": d2_end.isoformat(),
+        "reason": "Severe migraine and medical checkup",
+    })
+    assert r2.status_code == 201
+    req2_id = r2.json()["id"]
+
+    # HR lists all leave requests
+    as_user(users["hr_user"])
+    list_res = client.get("/api/leave/requests")
+    assert list_res.status_code == 200
+    all_requests = list_res.json()["requests"]
+
+    req1_data = next((r for r in all_requests if r["id"] == req1_id), None)
+    req2_data = next((r for r in all_requests if r["id"] == req2_id), None)
+    assert req1_data is not None
+    assert req2_data is not None
+
+    # Check Req1: Employee 1 + Casual Leave balance
+    assert "leave_balance" in req1_data
+    assert req1_data["leave_balance"] is not None
+    assert req1_data["leave_balance"]["allocated"] == bal_emp1_casual.allocated
+    assert req1_data["leave_balance"]["used"] == emp1_casual_used_before
+    assert req1_data["leave_balance"]["available"] == emp1_casual_avail_before
+
+    # Check Req2: Employee 2 + Sick Leave balance (NOT casual, NOT total)
+    assert "leave_balance" in req2_data
+    assert req2_data["leave_balance"] is not None
+    assert req2_data["leave_balance"]["allocated"] == bal_emp2_sick.allocated
+    assert req2_data["leave_balance"]["used"] == emp2_sick_used_before
+    assert req2_data["leave_balance"]["available"] == emp2_sick_avail_before
+
+    # HR approves Req1 (2 days) -> balance updated
+    appr_res = client.patch(f"/api/leave/requests/{req1_id}/approve")
+    assert appr_res.status_code == 200
+    appr_data = appr_res.json()
+    assert appr_data["leave_balance"]["allocated"] == bal_emp1_casual.allocated
+    assert appr_data["leave_balance"]["used"] == round(emp1_casual_used_before + 2.0, 2)
+    assert appr_data["leave_balance"]["available"] == round(emp1_casual_avail_before - 2.0, 2)
+
+    # HR revokes Req1 -> balance restored
+    rev_res = client.patch(f"/api/leave/requests/{req1_id}/revoke")
+    assert rev_res.status_code == 200
+    rev_data = rev_res.json()
+    assert rev_data["leave_balance"]["used"] == emp1_casual_used_before
+    assert rev_data["leave_balance"]["available"] == emp1_casual_avail_before
+
+    # HR rejects Req2 -> balance untouched
+    rej_res = client.patch(f"/api/leave/requests/{req2_id}/reject", json={"rejection_reason": "Team critical deadline"})
+    assert rej_res.status_code == 200
+    rej_data = rej_res.json()
+    assert rej_data["leave_balance"]["used"] == emp2_sick_used_before
+    assert rej_data["leave_balance"]["available"] == emp2_sick_avail_before
+

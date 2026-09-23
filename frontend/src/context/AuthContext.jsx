@@ -29,98 +29,142 @@ export function AuthProvider({ children }) {
   });
 
   // Loading flag for network operations
-  const [loading, setLoading] = useState(() => !!getAuthToken());
+  const [loading, setLoading] = useState(false);
 
-  // Initialization flag: true on boot when stored token is present, false once resolved
+  // Initialization flag: true on startup ONLY IF a valid token exists in storage
   const [isInitializing, setIsInitializing] = useState(() => !!getAuthToken());
 
-  // Guard ref to deduplicate simultaneous BroadcastChannel and storage events
+  // Deduplication refs
   const isSyncingRef = useRef(false);
+  const fetchPromiseRef = useRef(null);
 
   const fetchUserData = useCallback(async (explicitToken) => {
     const currentToken = explicitToken || getAuthToken();
+
+    // IF there is NO access token:
+    // - Do NOT call /api/auth/me
+    // - Set user to null
+    // - Set loading to false
     if (!currentToken) {
       setUser(null);
       setProfile(null);
       setRole(null);
+      setToken(null);
       setLoading(false);
       return null;
     }
 
-    try {
-      setLoading(true);
+    // Deduplicate concurrent fetch requests for the same token
+    if (fetchPromiseRef.current) {
+      return fetchPromiseRef.current;
+    }
 
-      // Verify token with GET /api/auth/me
-      const userData = await authApi.getMe(currentToken);
+    const promise = (async () => {
+      try {
+        setLoading(true);
 
-      if (userData) {
-        setUser(userData);
-        const resolvedRole = userData.role || "employee";
-        setRole(resolvedRole);
-        setToken(currentToken);
+        // Verify token with GET /api/auth/me (Authorization: Bearer <token>)
+        const userData = await authApi.getMe(currentToken);
 
-        // Fetch employee profile details for name and photo (non-fatal if absent)
-        try {
-          const profileData = await employeeApi.getMyProfile();
-          if (profileData) {
-            setProfile(profileData);
+        if (userData) {
+          setUser(userData);
+          const resolvedRole = userData.role || "employee";
+          setRole(resolvedRole);
+          setToken(currentToken);
+
+          // Fetch profile details (non-fatal if absent)
+          try {
+            const profileData = await employeeApi.getMyProfile();
+            if (profileData) {
+              setProfile(profileData);
+            }
+          } catch {
+            // Profile not yet provisioned
           }
-        } catch {
-          // Normal if profile hasn't been provisioned yet
-        }
 
-        return { success: true, user: userData, role: resolvedRole };
-      }
-    } catch (err) {
-      console.error("Failed to verify user session via /api/auth/me:", err);
-      if (err.status === 401 || err.status === 403) {
+          return { success: true, user: userData, role: resolvedRole };
+        } else {
+          throw new Error("No user returned from /api/auth/me");
+        }
+      } catch (err) {
+        console.error("Failed to verify user session via /api/auth/me:", err);
+        // On 401 or any verification failure:
+        // - Treat user as unauthenticated
+        // - Remove invalid/expired access token from storage
+        // - Clear current user and auth state
         clearAuthSession();
         setToken(null);
         setUser(null);
         setProfile(null);
         setRole(null);
+        return { success: false, error: err };
+      } finally {
+        setLoading(false);
+        fetchPromiseRef.current = null;
       }
-      return { success: false, error: err };
-    } finally {
-      setLoading(false);
-    }
+    })();
+
+    fetchPromiseRef.current = promise;
+    return promise;
   }, []);
 
-  // Initial startup verification: verify stored token once
+  // Initial startup verification: verify stored token once if present
   useEffect(() => {
     let isMounted = true;
     const storedToken = getAuthToken();
+
     if (storedToken) {
-      fetchUserData(storedToken).finally(() => {
-        if (isMounted) {
-          setIsInitializing(false);
-        }
-      });
+      fetchUserData(storedToken)
+        .catch((err) => {
+          console.error("Startup auth verification failed:", err);
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsInitializing(false);
+            setLoading(false);
+          }
+        });
     } else {
+      // No access token in localStorage:
+      // - Do NOT call /api/auth/me
+      // - Set authenticated user to null
+      // - Set loading state to false
+      // - Exit initialization immediately
+      setUser(null);
+      setProfile(null);
+      setRole(null);
+      setToken(null);
       setLoading(false);
       setIsInitializing(false);
     }
+
     return () => {
       isMounted = false;
     };
   }, [fetchUserData]);
 
-  // Synchronous + async auth update invoked right after OTP verification on login tab
+  // Synchronous + async auth update invoked right after OTP verification
   const loginWithToken = useCallback(
     async (accessToken, tokenType = "bearer") => {
+      if (!accessToken || typeof accessToken !== "string" || !accessToken.trim()) {
+        return { success: false, error: new Error("No access token provided") };
+      }
+
+      const cleanToken = accessToken.trim();
+
       // 1. Store in localStorage
-      localStorage.setItem("hrms_access_token", accessToken);
+      localStorage.setItem("hrms_access_token", cleanToken);
       localStorage.setItem("hrms_token_type", tokenType);
 
       // 2. Immediate state updates
-      setToken(accessToken);
+      setToken(cleanToken);
       setLoading(true);
 
       // 3. Broadcast login event to all other tabs (no credentials in payload)
       broadcastAuthEvent(AUTH_EVENTS.LOGIN);
 
       // 4. Verify session via GET /api/auth/me
-      const result = await fetchUserData(accessToken);
+      const result = await fetchUserData(cleanToken);
 
       if (result && result.success) {
         return { success: true, role: result.role, user: result.user };
@@ -128,7 +172,7 @@ export function AuthProvider({ children }) {
 
       // Fallback: decode role from JWT payload if /api/auth/me had a transient error
       try {
-        const parts = accessToken.split(".");
+        const parts = cleanToken.split(".");
         const payload = JSON.parse(
           atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))
         );
@@ -150,7 +194,23 @@ export function AuthProvider({ children }) {
       ...prev,
       ...newProfileData,
     }));
+    if (newProfileData) {
+      setUser((prev) => {
+        if (!prev) return prev;
+        const updatedFullName =
+          newProfileData.first_name !== undefined || newProfileData.last_name !== undefined
+            ? `${newProfileData.first_name || ""} ${newProfileData.last_name || ""}`.trim()
+            : prev.full_name;
+
+        return {
+          ...prev,
+          email: newProfileData.email || prev.email,
+          full_name: updatedFullName || prev.full_name,
+        };
+      });
+    }
   }, []);
+
 
   const refreshProfile = useCallback(async () => {
     try {
@@ -175,6 +235,8 @@ export function AuthProvider({ children }) {
     setUser(null);
     setProfile(null);
     setRole(null);
+    setLoading(false);
+    setIsInitializing(false);
 
     // 4. Navigate to /login
     navigate("/login", { replace: true });
@@ -210,7 +272,7 @@ export function AuthProvider({ children }) {
           isSyncingRef.current = false;
         }
       } else if (event.type === AUTH_EVENTS.LOGOUT) {
-        // Clear auth state on receiving logout event (DO NOT broadcast again, DO NOT call backend logout API)
+        // Clear auth state on receiving logout event
         clearAuthSession();
         setToken(null);
         setUser(null);
@@ -240,6 +302,8 @@ export function AuthProvider({ children }) {
           setUser(null);
           setProfile(null);
           setRole(null);
+          setLoading(false);
+          setIsInitializing(false);
           if (location.pathname !== "/login") {
             navigate("/login", { replace: true });
           }

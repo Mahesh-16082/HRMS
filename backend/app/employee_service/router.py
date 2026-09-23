@@ -4,6 +4,7 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     status,
 )
@@ -141,29 +142,59 @@ def get_my_profile(
 
 # ============================================================
 # UPDATE MY PROFILE
-# EMPLOYEE ONLY
+# HR + EMPLOYEE
 # ============================================================
 
 @router.put(
     "/me/profile",
     response_model=EmployeeResponse,
 )
-def update_my_profile(
+async def update_my_profile(
+    request: Request,
     data: EmployeeProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if current_user.role != "employee":
+    if current_user.role not in ("hr", "employee"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only employees can update their own profile.",
+            detail="You are not authorized to update this profile.",
         )
+
+    # Enforce strict backend protection on system-controlled fields
+    try:
+        raw_body = await request.json()
+        if isinstance(raw_body, dict):
+            protected_fields = {
+                "employee_code",
+                "role",
+                "employment_status",
+                "joining_date",
+                "department_id",
+                "designation_id",
+                "is_active",
+                "is_verified",
+                "id",
+                "user_id",
+            }
+            for field in protected_fields:
+                if field in raw_body:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Modifying protected field '{field}' is strictly prohibited.",
+                    )
+    except HTTPException:
+        raise
+    except Exception:
+        pass
 
     return service.update_self_profile(
         db,
         current_user.id,
         data,
+        is_hr=(current_user.role == "hr"),
     )
+
 
 
 # ============================================================

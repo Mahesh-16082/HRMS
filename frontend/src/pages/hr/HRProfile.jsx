@@ -7,6 +7,7 @@ import { LoadingState, ErrorAlert } from "../../components/common/FeedbackStates
 import {
   CameraIcon,
   CheckCircleIcon,
+  EditIcon,
   LockIcon,
   ShieldIcon,
   UserIcon,
@@ -18,11 +19,12 @@ export default function HRProfile() {
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    email: "",
     phone: "",
-    date_of_birth: "",
-    address: "",
   });
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!profile);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState("");
@@ -36,9 +38,8 @@ export default function HRProfile() {
       setFormData({
         first_name: profile.first_name || "",
         last_name: profile.last_name || "",
+        email: user?.email || profile.email || "",
         phone: profile.phone || "",
-        date_of_birth: profile.date_of_birth || "",
-        address: profile.address || "",
       });
       setInitialLoading(false);
     } else {
@@ -47,15 +48,57 @@ export default function HRProfile() {
           setFormData({
             first_name: data.first_name || "",
             last_name: data.last_name || "",
+            email: user?.email || data.email || "",
             phone: data.phone || "",
-            date_of_birth: data.date_of_birth || "",
-            address: data.address || "",
           });
         }
         setInitialLoading(false);
       });
     }
-  }, [profile, refreshProfile]);
+  }, [profile, user, refreshProfile]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setSaveError("");
+    setSaveSuccess("");
+  };
+
+  const handleCancel = () => {
+    setFormData({
+      first_name: profile?.first_name || "",
+      last_name: profile?.last_name || "",
+      email: user?.email || profile?.email || "",
+      phone: profile?.phone || "",
+    });
+    setSaveError("");
+    setIsEditing(false);
+  };
+
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveError("");
+    setSaveSuccess("");
+
+    try {
+      const payload = {
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: formData.phone.trim() || null,
+      };
+
+      const updated = await employeeApi.updateMyProfile(payload);
+      updateProfileState(updated);
+      setIsEditing(false);
+      setSaveSuccess("Profile details updated successfully.");
+    } catch (err) {
+      setSaveError(err.message || "Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -156,7 +199,9 @@ export default function HRProfile() {
                 {profile?.employee_code || "HR Admin"}
               </span>
               <div style={{ marginTop: "6px" }}>
-                <span className="badge badge-self">HR Administrator</span>
+                <span className={`badge badge-${(profile?.employment_status || "ACTIVE").toLowerCase()}`}>
+                  {profile?.employment_status || "ACTIVE"}
+                </span>
               </div>
             </div>
 
@@ -192,65 +237,104 @@ export default function HRProfile() {
             PROFILE DETAILS SECTION (Right Main Content)
         ======================================================== */}
         <main className="profile-details-main">
-          <div className="profile-details-form">
-            {/* Section 1: Administrator Information */}
+          <form onSubmit={handleProfileSubmit} className="profile-details-form">
+            {/* Section 1: Personal & Contact Details */}
             <section className="profile-form-section">
               <div className="profile-section-header">
                 <div className="section-accent-bar" />
-                <div style={{ display: "flex", alignItems: "center", width: "100%" }}>
+                <div style={{ display: "flex", alignItems: "center", width: "100%", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
                   <div>
-                    <h3 className="profile-section-title">Administrator Credentials</h3>
-                    <p className="profile-section-desc">Primary administrative identity and account credentials.</p>
+                    <h3 className="profile-section-title">Personal &amp; Contact Details</h3>
+                    <p className="profile-section-desc">Manage your administrative personal credentials and contact info.</p>
                   </div>
-                  <span className="readonly-tag" style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: "4px" }}>
-                    <LockIcon size={12} /> System Governed
-                  </span>
+                  {!isEditing && (
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => {
+                        setIsEditing(true);
+                        setSaveSuccess("");
+                        setSaveError("");
+                      }}
+                      style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <EditIcon size={14} />
+                      <span>Edit Profile</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
               <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label">
-                    First Name
+                    First Name {isEditing && <span style={{ color: "#ef4444" }}>*</span>}
                   </label>
                   <input
                     type="text"
+                    name="first_name"
                     value={formData.first_name}
-                    readOnly
-                    disabled
-                    className="form-input readonly"
+                    onChange={handleChange}
+                    readOnly={!isEditing}
+                    disabled={!isEditing}
+                    required={isEditing}
+                    maxLength={100}
+                    className={`form-input ${!isEditing ? "readonly" : ""}`}
                   />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
-                    Last Name
+                    Last Name {isEditing && <span style={{ color: "#ef4444" }}>*</span>}
                   </label>
                   <input
                     type="text"
+                    name="last_name"
                     value={formData.last_name}
-                    readOnly
-                    disabled
-                    className="form-input readonly"
+                    onChange={handleChange}
+                    readOnly={!isEditing}
+                    disabled={!isEditing}
+                    required={isEditing}
+                    maxLength={100}
+                    className={`form-input ${!isEditing ? "readonly" : ""}`}
                   />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
-                    Email Address
+                    Email Address {isEditing && <span style={{ color: "#ef4444" }}>*</span>}
                   </label>
                   <input
                     type="email"
-                    value={user?.email || ""}
-                    readOnly
-                    disabled
-                    className="form-input readonly"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    readOnly={!isEditing}
+                    disabled={!isEditing}
+                    required={isEditing}
+                    className={`form-input ${!isEditing ? "readonly" : ""}`}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Phone Number</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    readOnly={!isEditing}
+                    disabled={!isEditing}
+                    maxLength={20}
+                    placeholder={isEditing ? "+1 (555) 000-0000" : "—"}
+                    className={`form-input ${!isEditing ? "readonly" : ""}`}
                   />
                 </div>
 
                 <div className="form-group">
                   <label className="form-label">
                     Employee Code
+                    <span className="readonly-tag">System Assigned</span>
                   </label>
                   <input
                     type="text"
@@ -261,9 +345,29 @@ export default function HRProfile() {
                   />
                 </div>
               </div>
+
+              {isEditing && (
+                <div style={{ display: "flex", gap: "10px", marginTop: "20px" }}>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={saving}
+                  >
+                    {saving ? "Saving Changes..." : "Save Changes"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </section>
 
-            {/* Section 2: Organizational Privileges & Governance */}
+            {/* Section 2: Organizational Privileges & Governance (Permanently Read-Only) */}
             <section className="profile-form-section">
               <div className="profile-section-header">
                 <div className="section-accent-bar" />
@@ -280,7 +384,24 @@ export default function HRProfile() {
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Employment Status</label>
+                  <label className="form-label">
+                    Role Designation
+                    <span className="readonly-tag">System Governed</span>
+                  </label>
+                  <input
+                    type="text"
+                    value="HR Administrator"
+                    readOnly
+                    disabled
+                    className="form-input readonly"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Employment Status
+                    <span className="readonly-tag">HR Governed</span>
+                  </label>
                   <input
                     type="text"
                     value={profile?.employment_status || "ACTIVE"}
@@ -291,7 +412,10 @@ export default function HRProfile() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Joining Date</label>
+                  <label className="form-label">
+                    Joining Date
+                    <span className="readonly-tag">Contract Date</span>
+                  </label>
                   <input
                     type="text"
                     value={profile?.joining_date || "—"}
@@ -313,7 +437,7 @@ export default function HRProfile() {
                 </div>
               </div>
             </section>
-          </div>
+          </form>
         </main>
       </div>
 

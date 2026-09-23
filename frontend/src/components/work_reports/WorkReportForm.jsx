@@ -152,19 +152,7 @@ export default function WorkReportForm({
   return (
     <form onSubmit={(e) => handleAction(e, false)} className="wr-form">
       {formError && (
-        <div
-          style={{
-            padding: "10px 14px",
-            background: "#fee2e2",
-            color: "#b91c1c",
-            borderRadius: "8px",
-            fontSize: "13px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-          }}
-        >
+        <div className="wr-form-error">
           <AlertCircleIcon size={16} />
           <span>{formError}</span>
         </div>

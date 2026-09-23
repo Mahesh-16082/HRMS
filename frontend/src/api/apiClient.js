@@ -3,13 +3,25 @@ import { broadcastAuthEvent, AUTH_EVENTS } from "../utils/authSync";
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 export const getAuthToken = () => {
-  return localStorage.getItem("hrms_access_token");
+  try {
+    const token = localStorage.getItem("hrms_access_token");
+    if (!token || token === "undefined" || token === "null" || typeof token !== "string" || !token.trim()) {
+      return null;
+    }
+    return token.trim();
+  } catch {
+    return null;
+  }
 };
 
 export const clearAuthSession = () => {
-  localStorage.removeItem("hrms_access_token");
-  localStorage.removeItem("hrms_token_type");
-  sessionStorage.removeItem("hrms_login_email");
+  try {
+    localStorage.removeItem("hrms_access_token");
+    localStorage.removeItem("hrms_token_type");
+    sessionStorage.removeItem("hrms_login_email");
+  } catch (e) {
+    console.warn("Failed to clear auth session:", e);
+  }
 };
 
 export async function apiRequest(endpoint, options = {}) {
@@ -34,14 +46,19 @@ export async function apiRequest(endpoint, options = {}) {
     });
 
     if (response.status === 401) {
+      // Always remove invalid/expired token from storage on 401
+      clearAuthSession();
+      broadcastAuthEvent(AUTH_EVENTS.LOGOUT);
+
       const currentPath = window.location.pathname;
-      // Do not clear session or force-redirect if we are in the middle of login or OTP verification
       if (token && currentPath !== "/login" && currentPath !== "/verify-otp" && currentPath !== "/") {
-        clearAuthSession();
-        broadcastAuthEvent(AUTH_EVENTS.LOGOUT);
         window.location.href = "/login";
       }
-      throw new Error("Session expired. Please log in again.");
+
+      const error = new Error("Session expired. Please log in again.");
+      error.status = 401;
+      error.data = null;
+      throw error;
     }
 
     // Attempt to parse JSON

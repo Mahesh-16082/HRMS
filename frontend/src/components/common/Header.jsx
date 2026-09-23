@@ -75,15 +75,18 @@ export default function Header({ onToggleMobileMenu }) {
             onClick={() => setMenuOpen((prev) => !prev)}
             aria-expanded={menuOpen}
           >
-            {profile?.profile_photo_url ? (
-              <img
-                src={profile.profile_photo_url}
-                alt={fullName}
-                className="user-avatar-circle"
-              />
-            ) : (
-              <div className="user-avatar-circle">{initial}</div>
-            )}
+            <div className="header-avatar-wrap">
+              {profile?.profile_photo_url ? (
+                <img
+                  src={profile.profile_photo_url}
+                  alt={fullName}
+                  className="user-avatar-circle"
+                />
+              ) : (
+                <div className="user-avatar-circle">{initial}</div>
+              )}
+              <span className="online-indicator header-online-indicator" aria-label="Online" />
+            </div>
 
             <div className="user-info-text">
               <span className="user-name-line">{fullName}</span>

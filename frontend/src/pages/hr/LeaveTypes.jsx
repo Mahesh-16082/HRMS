@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { leaveApi } from "../../api/leaveApi";
 import SectionHeader from "../../components/common/SectionHeader";
 import StatCard from "../../components/common/StatCard";
@@ -14,9 +15,11 @@ import {
   EditIcon,
   TrashIcon,
   CloseIcon,
+  ChevronLeft,
 } from "../../components/icons/Icons";
 
 export default function LeaveTypes() {
+  const navigate = useNavigate();
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -185,11 +188,28 @@ export default function LeaveTypes() {
 
   return (
     <div className="page-container">
-      <SectionHeader
-        title="Leave Types Management"
-        actionText="+ Add Leave Type"
-        actionClick={handleOpenAdd}
-      />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
+        <SectionHeader title="Leave Types Management" />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate("/hr/leave-requests")}
+            title="Back to Leave Requests"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Leave Requests</span>
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleOpenAdd}
+          >
+            <PlusIcon size={14} />
+            <span>Add Leave Type</span>
+          </button>
+        </div>
+      </div>
 
       {/* Overview Stat Cards */}
       <div className="stats-grid" style={{ marginBottom: "20px" }}>
@@ -250,14 +270,6 @@ export default function LeaveTypes() {
                 Organization-wide leave entitlements and quotas
               </span>
             </div>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ fontSize: "12px", padding: "6px 14px" }}
-              onClick={handleOpenAdd}
-            >
-              <PlusIcon size={14} /> Add Leave Type
-            </button>
           </div>
 
           <div className="table-responsive-wrap">

@@ -277,7 +277,7 @@ def get_all_leave_requests(
     skip: int = 0,
     limit: int = 100,
 ) -> list[LeaveRequest]:
-    return repository.get_all_leave_requests(
+    requests = repository.get_all_leave_requests(
         db=db,
         employee_id=employee_id,
         leave_type_id=leave_type_id,
@@ -287,6 +287,30 @@ def get_all_leave_requests(
         skip=skip,
         limit=limit,
     )
+    if requests:
+        emp_ids = {r.employee_id for r in requests}
+        type_ids = {r.leave_type_id for r in requests}
+        years = {r.start_date.year for r in requests}
+        balances = (
+            db.query(LeaveBalance)
+            .filter(
+                LeaveBalance.employee_id.in_(emp_ids),
+                LeaveBalance.leave_type_id.in_(type_ids),
+                LeaveBalance.year.in_(years),
+            )
+            .all()
+        )
+        balance_map = {
+            (b.employee_id, b.leave_type_id, b.year): b
+            for b in balances
+        }
+        for r in requests:
+            b = balance_map.get((r.employee_id, r.leave_type_id, r.start_date.year))
+            if not b:
+                ensure_employee_yearly_balances(db, r.employee_id, r.start_date.year)
+                b = repository.get_leave_balance(db, r.employee_id, r.leave_type_id, r.start_date.year)
+            r.leave_balance = b
+    return requests
 
 
 def get_leave_request_by_id(db: Session, request_id: int) -> LeaveRequest:
@@ -296,6 +320,21 @@ def get_leave_request_by_id(db: Session, request_id: int) -> LeaveRequest:
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Leave request not found",
         )
+    b = repository.get_leave_balance(
+        db,
+        employee_id=leave_request.employee_id,
+        leave_type_id=leave_request.leave_type_id,
+        year=leave_request.start_date.year,
+    )
+    if not b:
+        ensure_employee_yearly_balances(db, leave_request.employee_id, leave_request.start_date.year)
+        b = repository.get_leave_balance(
+            db,
+            employee_id=leave_request.employee_id,
+            leave_type_id=leave_request.leave_type_id,
+            year=leave_request.start_date.year,
+        )
+    leave_request.leave_balance = b
     return leave_request
 
 
@@ -356,6 +395,7 @@ def approve_leave_request(
     db.commit()
     db.refresh(leave_request)
     db.refresh(balance)
+    leave_request.leave_balance = balance
     return leave_request
 
 
@@ -393,6 +433,68 @@ def reject_leave_request(
     # Balance is NOT consumed
     db.commit()
     db.refresh(leave_request)
+    leave_request.leave_balance = repository.get_leave_balance(
+        db,
+        employee_id=leave_request.employee_id,
+        leave_type_id=leave_request.leave_type_id,
+        year=leave_request.start_date.year,
+    )
+    return leave_request
+
+
+def revoke_leave_request(
+    db: Session,
+    reviewer_user_id: int,
+    request_id: int,
+) -> LeaveRequest:
+    leave_request = repository.get_leave_request_by_id(db, request_id)
+    if not leave_request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Leave request not found",
+        )
+
+    if leave_request.status == LeaveRequestStatus.REVOKED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This leave request has already been revoked",
+        )
+
+    if leave_request.status != LeaveRequestStatus.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Only approved leave requests can be revoked. Current status is {leave_request.status.value}",
+        )
+
+    # Fetch employee balance for the request year
+    request_year = leave_request.start_date.year
+    balance = repository.get_leave_balance(
+        db,
+        employee_id=leave_request.employee_id,
+        leave_type_id=leave_request.leave_type_id,
+        year=request_year,
+    )
+
+    if not balance:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Employee leave balance record not found to restore days",
+        )
+
+    # Restore the EXACT number of days that were deducted when the leave was approved:
+    # balance.used decreases, balance.available increases, balance.allocated stays unchanged
+    balance.used = max(0.0, round(balance.used - leave_request.number_of_days, 2))
+    balance.available = round(balance.allocated - balance.used, 2)
+
+    now = datetime.now(timezone.utc)
+    leave_request.status = LeaveRequestStatus.REVOKED
+    leave_request.reviewed_by = reviewer_user_id
+    leave_request.reviewed_at = now
+
+    db.commit()
+    db.refresh(leave_request)
+    db.refresh(balance)
+    leave_request.leave_balance = balance
     return leave_request
 
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { projectApi } from "../../api/projectApi";
 import SectionHeader from "../../components/common/SectionHeader";
 import StatCard from "../../components/common/StatCard";
@@ -16,9 +17,11 @@ import {
   CloseIcon,
   ShieldIcon,
   ClockIcon,
+  ChevronLeft,
 } from "../../components/icons/Icons";
 
 export default function ProjectRoles() {
+  const navigate = useNavigate();
   const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -184,12 +187,23 @@ export default function ProjectRoles() {
 
   return (
     <div className="page-container">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
         <SectionHeader title="Project Roles" />
-        <button className="btn btn-primary" onClick={handleOpenAdd}>
-          <PlusIcon size={16} />
-          <span>Add Project Role</span>
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => navigate("/hr/projects")}
+            title="Back to Projects"
+          >
+            <ChevronLeft size={16} />
+            <span>Back to Projects</span>
+          </button>
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
+            <PlusIcon size={16} />
+            <span>Add Project Role</span>
+          </button>
+        </div>
       </div>
 
       {/* Top Stat Cards */}

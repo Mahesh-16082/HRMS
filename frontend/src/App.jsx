@@ -42,8 +42,9 @@ function RoleRedirect() {
   const { token, loading, isInitializing, user } = useAuth();
   const storedToken = getAuthToken();
 
-  if (isInitializing || loading || (storedToken && !user)) return null;
+  if (isInitializing || (storedToken && loading)) return null;
   if (!token && !storedToken) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   const verifiedRole = user?.role;
   if (verifiedRole === "hr") return <Navigate to="/hr/dashboard" replace />;
   return <Navigate to="/employee/dashboard" replace />;

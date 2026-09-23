@@ -79,6 +79,12 @@ export const leaveApi = {
       body: JSON.stringify({ rejection_reason: rejectionReason }),
     }),
 
+  // HR revokes an approved leave request
+  revokeRequest: (requestId) =>
+    apiRequest(`/api/leave/requests/${requestId}/revoke`, {
+      method: "PATCH",
+    }),
+
   // HR lists all leave balances
   getAllBalances: (params = {}) => {
     const query = new URLSearchParams();

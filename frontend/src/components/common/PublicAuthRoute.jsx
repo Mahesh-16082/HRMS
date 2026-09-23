@@ -7,7 +7,7 @@ export default function PublicAuthRoute({ children }) {
   const storedToken = getAuthToken();
 
   // While checking authentication for an existing stored session, show lightweight loading state
-  if (isInitializing || (storedToken && (loading || !user))) {
+  if (isInitializing || (storedToken && loading)) {
     return (
       <div style={{
         display: "flex",

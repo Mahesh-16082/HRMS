@@ -96,6 +96,15 @@ class LeaveBalanceResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LeaveBalanceSummary(BaseModel):
+    id: int | None = None
+    allocated: float
+    used: float
+    available: float
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class LeaveBalanceListResponse(BaseModel):
     total: int
     balances: list[LeaveBalanceResponse]
@@ -133,6 +142,7 @@ class LeaveRequestResponse(BaseModel):
     leave_type: LeaveTypeResponse | None = None
     employee: EmployeeSummary | None = None
     reviewer: UserSummary | None = None
+    leave_balance: LeaveBalanceSummary | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -140,3 +150,4 @@ class LeaveRequestResponse(BaseModel):
 class LeaveRequestListResponse(BaseModel):
     total: int
     requests: list[LeaveRequestResponse]
+
