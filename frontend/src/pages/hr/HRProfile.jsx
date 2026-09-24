@@ -85,7 +85,6 @@ export default function HRProfile() {
       const payload = {
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
-        email: formData.email.trim().toLowerCase(),
         phone: formData.phone.trim() || null,
       };
 
@@ -302,17 +301,16 @@ export default function HRProfile() {
 
                 <div className="form-group">
                   <label className="form-label">
-                    Email Address {isEditing && <span style={{ color: "#ef4444" }}>*</span>}
+                    Email Address
+                    <span className="readonly-tag">Read-only</span>
                   </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleChange}
-                    readOnly={!isEditing}
-                    disabled={!isEditing}
-                    required={isEditing}
-                    className={`form-input ${!isEditing ? "readonly" : ""}`}
+                    readOnly
+                    disabled
+                    className="form-input readonly"
                   />
                 </div>
 

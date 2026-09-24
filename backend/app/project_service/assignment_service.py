@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app.email_service import service as email_service
 from app.employee_service import repository as employee_repository
 from app.employee_service.models import EmploymentStatus
+from app.notification_service.models import NotificationType
+from app.notification_service.service import create_notification
 from app.project_service import assignment_repository
 from app.project_service import repository as project_repository
 from app.project_service import role_repository
@@ -124,6 +126,29 @@ def create_assignment(
                 f"Project assignment saved, but failed to send email to {recipient_email}: {exc}",
                 exc_info=True,
             )
+
+    # 7. Send in-app notifications to employee
+    if employee.user_id:
+        create_notification(
+            db=db,
+            recipient_user_id=employee.user_id,
+            notification_type=NotificationType.PROJECT_ASSIGNED,
+            title="Assigned to Project",
+            message=f"You have been assigned to project '{project.project_name}'.",
+            reference_type="project",
+            reference_id=str(project.id),
+            commit=True,
+        )
+        create_notification(
+            db=db,
+            recipient_user_id=employee.user_id,
+            notification_type=NotificationType.PROJECT_ROLE_ASSIGNED,
+            title="Project Role Assigned",
+            message=f"You have been assigned the role '{role.name}' on project '{project.project_name}'.",
+            reference_type="project_role",
+            reference_id=str(role.id),
+            commit=True,
+        )
 
     return saved_assignment
 

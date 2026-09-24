@@ -15,6 +15,8 @@ from app.complaint_service.schemas import (
 )
 from app.employee_service import repository as employee_repository
 from app.employee_service.models import Employee, EmploymentStatus
+from app.notification_service.models import NotificationType
+from app.notification_service.service import create_notification, get_responsible_hr_user
 
 
 # ============================================================
@@ -68,7 +70,22 @@ def create_complaint(
         resolved_at=None,
     )
 
-    return repository.create_complaint(db, complaint)
+    saved_complaint = repository.create_complaint(db, complaint)
+
+    hr_user = get_responsible_hr_user(db)
+    if hr_user:
+        create_notification(
+            db=db,
+            recipient_user_id=hr_user.id,
+            notification_type=NotificationType.COMPLAINT_SUBMITTED,
+            title="New Complaint Submitted",
+            message=f"{employee.first_name} {employee.last_name} submitted a complaint: {saved_complaint.subject}",
+            reference_type="complaint",
+            reference_id=str(saved_complaint.id),
+            commit=True,
+        )
+
+    return saved_complaint
 
 
 def get_my_complaints(
@@ -170,7 +187,22 @@ def update_my_complaint(
     if data.priority is not None:
         update_dict["priority"] = data.priority
 
-    return repository.update_complaint(db, complaint, update_dict)
+    updated_complaint = repository.update_complaint(db, complaint, update_dict)
+
+    hr_user = get_responsible_hr_user(db)
+    if hr_user:
+        create_notification(
+            db=db,
+            recipient_user_id=hr_user.id,
+            notification_type=NotificationType.COMPLAINT_UPDATED,
+            title="Complaint Updated by Employee",
+            message=f"{employee.first_name} {employee.last_name} updated complaint: {updated_complaint.subject}",
+            reference_type="complaint",
+            reference_id=str(updated_complaint.id),
+            commit=True,
+        )
+
+    return updated_complaint
 
 
 # ============================================================
@@ -259,6 +291,7 @@ def update_complaint_status(
         )
 
     current_status = complaint.status
+    current_remarks = complaint.hr_remarks
 
     # If status is changing, validate transition
     if new_status != current_status:
@@ -280,13 +313,43 @@ def update_complaint_status(
     else:
         resolved_at = complaint.resolved_at
 
-    return repository.update_complaint_status(
+    status_changed = new_status != current_status
+    remarks_changed = hr_remarks is not None and hr_remarks.strip() != (current_remarks or "").strip()
+
+    updated = repository.update_complaint_status(
         db=db,
         complaint=complaint,
         status=new_status,
         hr_remarks=hr_remarks,
         resolved_at=resolved_at,
     )
+
+    emp = updated.employee or employee_repository.get_employee_by_id(db, updated.employee_id)
+    if emp and emp.user_id:
+        if status_changed and new_status == ComplaintStatus.RESOLVED:
+            create_notification(
+                db=db,
+                recipient_user_id=emp.user_id,
+                notification_type=NotificationType.COMPLAINT_RESOLVED,
+                title="Complaint Resolved",
+                message=f"Your complaint '{updated.subject}' has been marked as resolved.",
+                reference_type="complaint",
+                reference_id=str(updated.id),
+                commit=True,
+            )
+        elif status_changed or remarks_changed:
+            create_notification(
+                db=db,
+                recipient_user_id=emp.user_id,
+                notification_type=NotificationType.COMPLAINT_UPDATED,
+                title="Complaint Updated by HR",
+                message=f"Your complaint '{updated.subject}' has been updated to {new_status.value}.",
+                reference_type="complaint",
+                reference_id=str(updated.id),
+                commit=True,
+            )
+
+    return updated
 
 
 def get_complaint_counts(db: Session) -> dict:

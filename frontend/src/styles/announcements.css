@@ -305,3 +305,352 @@
   }
 }
 
+/* ========================================================
+   SHARED HELPER CLASSES (LIGHT & DARK COMPATIBLE)
+======================================================== */
+.badge-expired {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  font-size: 10.5px;
+}
+
+.announcement-success-alert {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.announcement-date-cell {
+  color: var(--text-muted);
+}
+
+.announcement-date-cell.is-expired {
+  color: #b91c1c;
+}
+
+.table-action-btn.btn-edit {
+  background: var(--bg-hover, #f1f5f9);
+  color: var(--text-main);
+  border-color: var(--border-color);
+}
+
+.table-action-btn.btn-edit:hover {
+  background: var(--border-color);
+}
+
+/* StatCard amber color support (Drafts Card) */
+.stat-card.amber .stat-icon-circle {
+  background: var(--accent-orange-bg);
+  color: var(--accent-orange-text);
+}
+
+.stat-card.amber .stat-accent-bar {
+  background: var(--accent-orange-bar);
+}
+
+/* ========================================================
+   DARK MODE STYLES & CONTRAST REFINEMENTS
+   Scoped strictly under [data-theme="dark"]
+   Preserves Light Mode completely
+======================================================== */
+
+/* Table Card & Header Bar */
+[data-theme="dark"] .table-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme="dark"] .table-header-bar {
+  border-bottom-color: var(--border-color);
+}
+
+/* Filter Controls: Search & Dropdowns */
+[data-theme="dark"] .search-bar {
+  background: #0b172d;
+  border-color: #223862;
+}
+
+[data-theme="dark"] .search-bar svg {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .search-bar input {
+  color: #f1f5f9;
+}
+
+[data-theme="dark"] .search-bar input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .search-bar:focus-within {
+  border-color: #6b5df7;
+  background: #0e1d38;
+  box-shadow: 0 0 0 3px rgba(107, 93, 247, 0.25);
+}
+
+[data-theme="dark"] .table-actions-group .form-select {
+  background-color: #0b172d;
+  color: #e2e8f0;
+  border-color: #223862;
+  color-scheme: dark;
+}
+
+[data-theme="dark"] .table-actions-group .form-select:focus {
+  border-color: #6b5df7;
+  box-shadow: 0 0 0 3px rgba(107, 93, 247, 0.25);
+}
+
+[data-theme="dark"] .table-actions-group .form-select option {
+  background-color: #0e1d38;
+  color: #e2e8f0;
+}
+
+/* Data Table: Headers, Rows, Cells & Hover */
+[data-theme="dark"] .data-table th {
+  background: #112242;
+  color: #cbd5e1;
+  border-bottom: 1px solid #1e355e;
+}
+
+[data-theme="dark"] .data-table td {
+  border-bottom: 1px solid #172b50;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .data-table tr:hover td {
+  background: #142546;
+}
+
+/* Table Text Hierarchy & Links */
+[data-theme="dark"] .announcement-table-title {
+  color: var(--text-heading, #ffffff) !important;
+  transition: color 0.15s ease;
+}
+
+[data-theme="dark"] .announcement-table-title:hover {
+  color: #a5b4fc !important;
+}
+
+[data-theme="dark"] .announcement-table-desc {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .announcement-date-cell {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .announcement-date-cell.is-expired {
+  color: #f87171 !important;
+  font-weight: 500;
+}
+
+/* Action Buttons in Table & Modals */
+[data-theme="dark"] .table-action-btn {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+/* View Button (Neutral) */
+[data-theme="dark"] .table-action-btn.btn-view {
+  background: #172744;
+  color: #e2e8f0;
+  border-color: #2b3f66;
+}
+
+[data-theme="dark"] .table-action-btn.btn-view:hover:not(:disabled) {
+  background: #20355b;
+  color: #ffffff;
+  border-color: #3b5488;
+}
+
+/* Edit Button (Neutral / Primary Accent) */
+[data-theme="dark"] .table-action-btn.btn-edit {
+  background: rgba(107, 93, 247, 0.16);
+  color: #c4b5fd;
+  border-color: rgba(107, 93, 247, 0.35);
+}
+
+[data-theme="dark"] .table-action-btn.btn-edit:hover:not(:disabled) {
+  background: rgba(107, 93, 247, 0.28);
+  color: #ffffff;
+  border-color: rgba(107, 93, 247, 0.55);
+}
+
+/* Publish Button (Success / Green) */
+[data-theme="dark"] .table-action-btn.btn-publish {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+[data-theme="dark"] .table-action-btn.btn-publish:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.28);
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.55);
+}
+
+/* Archive Button (Warning / Amber) */
+[data-theme="dark"] .table-action-btn.btn-archive {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .table-action-btn.btn-archive:hover:not(:disabled) {
+  background: rgba(245, 158, 11, 0.28);
+  color: #fde68a;
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+/* Delete Button (Destructive / Red) */
+[data-theme="dark"] .table-action-btn.btn-delete {
+  background: rgba(239, 68, 68, 0.16);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .table-action-btn.btn-delete:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.28);
+  color: #fecaca;
+  border-color: rgba(239, 68, 68, 0.55);
+}
+
+/* Disabled Buttons: Clearly recognizable without vanishing */
+[data-theme="dark"] .table-action-btn:disabled {
+  opacity: 0.5;
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: #64748b !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Category Badges in Dark Mode */
+[data-theme="dark"] .badge-cat-general {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+[data-theme="dark"] .badge-cat-policy {
+  background: rgba(168, 85, 247, 0.16);
+  color: #d8b4fe;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+
+[data-theme="dark"] .badge-cat-event {
+  background: rgba(14, 165, 233, 0.16);
+  color: #7dd3fc;
+  border-color: rgba(14, 165, 233, 0.3);
+}
+
+[data-theme="dark"] .badge-cat-holiday {
+  background: rgba(34, 197, 94, 0.16);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+[data-theme="dark"] .badge-cat-important {
+  background: rgba(244, 63, 94, 0.16);
+  color: #fda4af;
+  border-color: rgba(244, 63, 94, 0.3);
+}
+
+/* Priority Badges in Dark Mode */
+[data-theme="dark"] .badge-pri-urgent {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .badge-pri-high {
+  background: rgba(249, 115, 22, 0.18);
+  color: #fdba74;
+  border-color: rgba(249, 115, 22, 0.35);
+}
+
+[data-theme="dark"] .badge-pri-medium {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .badge-pri-low {
+  background: rgba(16, 185, 129, 0.18);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+/* Status Badges in Dark Mode */
+[data-theme="dark"] .badge-status-draft {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .badge-status-published {
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+[data-theme="dark"] .badge-status-archived {
+  background: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+/* Expired Badge & Alerts in Dark Mode */
+[data-theme="dark"] .badge-expired {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+[data-theme="dark"] .announcement-success-alert {
+  background: rgba(34, 197, 94, 0.18) !important;
+  color: #86efac !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+}
+
+/* Details Modal Boxes in Dark Mode */
+[data-theme="dark"] .detail-content-box {
+  background: #0b172d !important;
+  border-color: #1e3156 !important;
+}
+
+[data-theme="dark"] .detail-expiry-box {
+  background: rgba(245, 158, 11, 0.16);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+[data-theme="dark"] .announcement-detail-expired-date {
+  color: #f87171 !important;
+}
+
+/* Cards in Grid Views (Employee & HR) */
+[data-theme="dark"] .announcement-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark"] .announcement-card:hover {
+  border-color: rgba(107, 93, 247, 0.45);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .announcement-card-meta {
+  border-top-color: var(--border-color);
+}
+
+

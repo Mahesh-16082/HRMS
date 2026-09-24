@@ -17,6 +17,9 @@ from app.announcement_service.schemas import (
     AnnouncementUpdate,
 )
 from app.authentication_service.models import User
+from app.employee_service.models import Employee, EmploymentStatus
+from app.notification_service.models import NotificationType
+from app.notification_service.service import create_notification
 
 
 def validate_future_expiry(expires_at: datetime | None) -> None:
@@ -169,6 +172,31 @@ def publish_announcement(
     announcement.status = AnnouncementStatus.PUBLISHED
     announcement.published_at = now
     announcement.updated_at = now
+
+    active_employee_user_ids = [
+        row[0]
+        for row in db.query(Employee.user_id)
+        .join(User, Employee.user_id == User.id)
+        .filter(
+            Employee.employment_status == EmploymentStatus.ACTIVE,
+            Employee.deleted_at.is_(None),
+            User.is_active.is_(True),
+        )
+        .all()
+        if row[0] is not None
+    ]
+    for uid in active_employee_user_ids:
+        create_notification(
+            db=db,
+            recipient_user_id=uid,
+            notification_type=NotificationType.ANNOUNCEMENT_PUBLISHED,
+            title=f"New Announcement: {announcement.title}",
+            message=f"{announcement.title} has been published.",
+            reference_type="announcement",
+            reference_id=str(announcement.id),
+            commit=False,
+        )
+
     return repository.update_announcement(db, announcement)
 
 

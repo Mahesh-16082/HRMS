@@ -443,10 +443,18 @@ export default function EmployeeDashboard() {
             </button>
           </div>
 
-          {/* Performance & Reviews (Placeholder) */}
+          {/* Performance & Reviews */}
           <div
             className="employee-action-card"
-            onClick={() => alert("Performance Service is scheduled for a future update.")}
+            onClick={() => navigate("/employee/performance")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/employee/performance");
+              }
+            }}
           >
             <div className="employee-action-icon-wrap" style={{ background: "#f3e8ff", color: "#9333ea" }}>
               <PerformanceIcon size={22} />

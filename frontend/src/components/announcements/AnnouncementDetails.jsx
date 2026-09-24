@@ -109,14 +109,7 @@ export default function AnnouncementDetails({
                 </span>
               )}
               {isExpired && (
-                <span
-                  className="badge"
-                  style={{
-                    background: "#fee2e2",
-                    color: "#b91c1c",
-                    border: "1px solid #fecaca",
-                  }}
-                >
+                <span className="badge badge-expired">
                   Expired
                 </span>
               )}
@@ -242,6 +235,7 @@ export default function AnnouncementDetails({
                   Expiration Date
                 </span>
                 <span
+                  className={isExpired ? "announcement-detail-expired-date" : ""}
                   style={{
                     fontSize: "12.5px",
                     fontWeight: "600",
@@ -344,7 +338,7 @@ export default function AnnouncementDetails({
               {announcement.status !== "ARCHIVED" && onEdit && (
                 <button
                   type="button"
-                  className="table-action-btn btn-view"
+                  className="table-action-btn btn-view btn-edit"
                   onClick={() => onEdit(announcement)}
                   disabled={actionLoading}
                 >

@@ -9,6 +9,8 @@ from app.authentication_service.models import User
 from app.cloudinary_service import service as cloudinary_service
 from app.employee_service import repository as employee_repository
 from app.employee_service.models import Employee, EmploymentStatus
+from app.notification_service.models import NotificationType
+from app.notification_service.service import create_notification, get_responsible_hr_user
 from app.work_report_service import repository
 from app.work_report_service.models import (
     WorkReport,
@@ -223,7 +225,23 @@ def create_work_report(
         submitted_at=submitted_at,
     )
 
-    return repository.create_work_report(db, report)
+    saved_report = repository.create_work_report(db, report)
+
+    if saved_report.status == WorkReportStatus.SUBMITTED:
+        hr_user = get_responsible_hr_user(db)
+        if hr_user:
+            create_notification(
+                db=db,
+                recipient_user_id=hr_user.id,
+                notification_type=NotificationType.WORK_REPORT_SUBMITTED,
+                title="Work Report Submitted",
+                message=f"{employee.first_name} {employee.last_name} submitted a work report for {saved_report.work_date}.",
+                reference_type="work_report",
+                reference_id=str(saved_report.id),
+                commit=True,
+            )
+
+    return saved_report
 
 
 def get_my_work_reports(
@@ -356,7 +374,22 @@ def submit_my_work_report(
     report.status = WorkReportStatus.SUBMITTED
     report.submitted_at = datetime.now(timezone.utc)
 
-    return repository.update_work_report(db, report)
+    saved_report = repository.update_work_report(db, report)
+
+    hr_user = get_responsible_hr_user(db, report.reviewed_by)
+    if hr_user:
+        create_notification(
+            db=db,
+            recipient_user_id=hr_user.id,
+            notification_type=NotificationType.WORK_REPORT_SUBMITTED,
+            title="Work Report Submitted",
+            message=f"{employee.first_name} {employee.last_name} submitted a work report for {saved_report.work_date}.",
+            reference_type="work_report",
+            reference_id=str(saved_report.id),
+            commit=True,
+        )
+
+    return saved_report
 
 
 def delete_my_work_report(
@@ -669,5 +702,32 @@ def review_work_report_hr(
     report.reviewed_at = datetime.now(timezone.utc)
     report.review_feedback = data.review_feedback.strip() if data.review_feedback else None
 
-    return repository.update_work_report(db, report)
+    saved_report = repository.update_work_report(db, report)
+
+    emp = saved_report.employee or employee_repository.get_employee_by_id(db, saved_report.employee_id)
+    if emp and emp.user_id:
+        if data.status == WorkReportStatus.APPROVED:
+            create_notification(
+                db=db,
+                recipient_user_id=emp.user_id,
+                notification_type=NotificationType.WORK_REPORT_APPROVED,
+                title="Work Report Approved",
+                message=f"Your work report for {saved_report.work_date} has been approved.",
+                reference_type="work_report",
+                reference_id=str(saved_report.id),
+                commit=True,
+            )
+        elif data.status == WorkReportStatus.REJECTED:
+            create_notification(
+                db=db,
+                recipient_user_id=emp.user_id,
+                notification_type=NotificationType.WORK_REPORT_REJECTED,
+                title="Work Report Rejected",
+                message=f"Your work report for {saved_report.work_date} has been rejected. Feedback: {saved_report.review_feedback}",
+                reference_type="work_report",
+                reference_id=str(saved_report.id),
+                commit=True,
+            )
+
+    return saved_report
 

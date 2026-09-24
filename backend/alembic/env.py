@@ -20,6 +20,8 @@ from app.complaint_service.models import Complaint
 from app.announcement_service.models import Announcement
 from app.audit_service.models import AuditLog
 from app.work_report_service.models import WorkReport, WorkReportAttachment
+from app.performance_service.models import PerformanceReview, ReviewCategoryRating, PerformanceGoal
+from app.notification_service.models import Notification
 
 config = context.config
 

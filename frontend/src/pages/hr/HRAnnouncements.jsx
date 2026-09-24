@@ -219,7 +219,7 @@ export default function HRAnnouncements() {
   };
 
   return (
-    <div className="page-container">
+    <div className="page-container hr-announcements-page">
       {/* Header with Create Button */}
       <div
         style={{
@@ -289,20 +289,7 @@ export default function HRAnnouncements() {
       {error && <ErrorAlert message={error} onRetry={loadAnnouncements} />}
 
       {successMsg && (
-        <div
-          style={{
-            background: "#dcfce7",
-            color: "#166534",
-            padding: "12px 18px",
-            borderRadius: "10px",
-            fontSize: "13.5px",
-            marginBottom: "16px",
-            border: "1px solid #bbf7d0",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-          }}
-        >
+        <div className="announcement-success-alert">
           <CheckCircleIcon size={18} />
           <span>{successMsg}</span>
         </div>
@@ -448,6 +435,7 @@ export default function HRAnnouncements() {
                       <td>
                         <div style={{ display: "flex", flexDirection: "column" }}>
                           <span
+                            className="announcement-table-title"
                             style={{
                               fontWeight: "600",
                               color: "var(--text-heading)",
@@ -459,6 +447,7 @@ export default function HRAnnouncements() {
                             {item.title}
                           </span>
                           <span
+                            className="announcement-table-desc"
                             style={{
                               fontSize: "12px",
                               color: "var(--text-muted)",
@@ -488,15 +477,7 @@ export default function HRAnnouncements() {
                             {item.status}
                           </span>
                           {isExpired && (
-                            <span
-                              className="badge"
-                              style={{
-                                background: "#fee2e2",
-                                color: "#b91c1c",
-                                border: "1px solid #fecaca",
-                                fontSize: "10.5px",
-                              }}
-                            >
+                            <span className="badge badge-expired">
                               Expired
                             </span>
                           )}
@@ -505,7 +486,7 @@ export default function HRAnnouncements() {
                       <td style={{ fontSize: "12.5px", color: "var(--text-muted)" }}>
                         {formatDate(item.published_at)}
                       </td>
-                      <td style={{ fontSize: "12.5px", color: isExpired ? "#b91c1c" : "var(--text-muted)" }}>
+                      <td className={`announcement-date-cell ${isExpired ? "is-expired" : ""}`} style={{ fontSize: "12.5px" }}>
                         {formatDate(item.expires_at)}
                       </td>
                       <td style={{ textAlign: "right" }}>
@@ -558,7 +539,7 @@ export default function HRAnnouncements() {
                           {item.status !== "ARCHIVED" && (
                             <button
                               type="button"
-                              className="table-action-btn btn-view"
+                              className="table-action-btn btn-view btn-edit"
                               onClick={() => {
                                 setEditingAnnouncement(item);
                                 setIsFormModalOpen(true);

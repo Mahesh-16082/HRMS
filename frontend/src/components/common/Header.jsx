@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
+import { useNotification } from "../../context/useNotification";
 import {
   MoonIcon,
   SunIcon,
@@ -15,6 +16,7 @@ import {
 export default function Header({ onToggleMobileMenu }) {
   const { user, profile, role, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
+  const { unreadCount } = useNotification();
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -36,6 +38,7 @@ export default function Header({ onToggleMobileMenu }) {
   const initial = (fullName.charAt(0) || "U").toUpperCase();
 
   const profileLink = role === "hr" ? "/hr/profile" : "/employee/profile";
+  const notificationsLink = role === "hr" ? "/hr/notifications" : "/employee/notifications";
 
   return (
     <header className="top-header">
@@ -62,11 +65,20 @@ export default function Header({ onToggleMobileMenu }) {
           <span>{isDark ? "Light" : "Dark"}</span>
         </button>
 
-        {/* Notification Bell with red dot */}
-        <button className="notification-bell-btn" title="Notifications" aria-label="Notifications">
+        {/* Notification Bell with dynamic unread badge */}
+        <Link
+          to={notificationsLink}
+          className="notification-bell-btn"
+          title={unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
+          aria-label="Notifications"
+        >
           <NotificationsIcon size={18} />
-          <span className="notification-dot" />
-        </button>
+          {unreadCount > 0 && (
+            <span className="notification-badge-count">
+              {unreadCount > 99 ? "99+" : unreadCount}
+            </span>
+          )}
+        </Link>
 
         {/* User Profile Widget */}
         <div className="user-profile-widget" ref={dropdownRef}>

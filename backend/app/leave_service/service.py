@@ -19,6 +19,8 @@ from app.leave_service.schemas import (
     LeaveTypeCreate,
     LeaveTypeUpdate,
 )
+from app.notification_service.models import NotificationType
+from app.notification_service.service import create_notification, get_responsible_hr_user
 
 
 # ============================================================
@@ -182,7 +184,22 @@ def apply_leave_request(
         status=LeaveRequestStatus.PENDING,
     )
 
-    return repository.create_leave_request(db, leave_request)
+    saved_request = repository.create_leave_request(db, leave_request)
+
+    hr_user = get_responsible_hr_user(db)
+    if hr_user:
+        create_notification(
+            db=db,
+            recipient_user_id=hr_user.id,
+            notification_type=NotificationType.LEAVE_REQUEST_SUBMITTED,
+            title="New Leave Request",
+            message=f"{employee.first_name} {employee.last_name} submitted a leave request for {saved_request.number_of_days} day(s).",
+            reference_type="leave",
+            reference_id=str(saved_request.id),
+            commit=True,
+        )
+
+    return saved_request
 
 
 def get_my_leave_requests(
@@ -392,6 +409,19 @@ def approve_leave_request(
     leave_request.reviewed_by = reviewer_user_id
     leave_request.reviewed_at = now
 
+    emp = leave_request.employee or employee_repository.get_employee_by_id(db, leave_request.employee_id)
+    if emp and emp.user_id:
+        create_notification(
+            db=db,
+            recipient_user_id=emp.user_id,
+            notification_type=NotificationType.LEAVE_REQUEST_APPROVED,
+            title="Leave Request Approved",
+            message=f"Your leave request for {leave_request.number_of_days} day(s) from {leave_request.start_date} to {leave_request.end_date} has been approved.",
+            reference_type="leave",
+            reference_id=str(leave_request.id),
+            commit=False,
+        )
+
     db.commit()
     db.refresh(leave_request)
     db.refresh(balance)
@@ -429,6 +459,19 @@ def reject_leave_request(
     leave_request.rejection_reason = rejection_reason.strip()
     leave_request.reviewed_by = reviewer_user_id
     leave_request.reviewed_at = now
+
+    emp = leave_request.employee or employee_repository.get_employee_by_id(db, leave_request.employee_id)
+    if emp and emp.user_id:
+        create_notification(
+            db=db,
+            recipient_user_id=emp.user_id,
+            notification_type=NotificationType.LEAVE_REQUEST_REJECTED,
+            title="Leave Request Rejected",
+            message=f"Your leave request for {leave_request.number_of_days} day(s) has been rejected. Reason: {leave_request.rejection_reason}",
+            reference_type="leave",
+            reference_id=str(leave_request.id),
+            commit=False,
+        )
 
     # Balance is NOT consumed
     db.commit()
@@ -490,6 +533,19 @@ def revoke_leave_request(
     leave_request.status = LeaveRequestStatus.REVOKED
     leave_request.reviewed_by = reviewer_user_id
     leave_request.reviewed_at = now
+
+    emp = leave_request.employee or employee_repository.get_employee_by_id(db, leave_request.employee_id)
+    if emp and emp.user_id:
+        create_notification(
+            db=db,
+            recipient_user_id=emp.user_id,
+            notification_type=NotificationType.LEAVE_REQUEST_REVOKED,
+            title="Leave Request Revoked",
+            message=f"Your approved leave request for {leave_request.number_of_days} day(s) from {leave_request.start_date} to {leave_request.end_date} has been revoked.",
+            reference_type="leave",
+            reference_id=str(leave_request.id),
+            commit=False,
+        )
 
     db.commit()
     db.refresh(leave_request)
