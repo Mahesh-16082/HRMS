@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getWorkReportsHR } from "../../api/workReportApi";
+import { getWorkReportsHR, revokeWorkReportHR } from "../../api/workReportApi";
 import { employeeApi } from "../../api/employeeApi";
 import { projectApi } from "../../api/projectApi";
 import SectionHeader from "../../components/common/SectionHeader";
@@ -20,6 +20,7 @@ import {
   ChevronRight,
   EyeIcon,
   UsersIcon,
+  CloseIcon,
 } from "../../components/icons/Icons";
 import HRWorkReportDetails from "../../components/work_reports/HRWorkReportDetails";
 import "../../styles/workReports.css";
@@ -60,6 +61,11 @@ export default function HRWorkReports() {
 
   // Selected report for review / view modal
   const [selectedReport, setSelectedReport] = useState(null);
+
+  // Revoke confirmation modal state
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revoking, setRevoking] = useState(false);
+  const [revokeError, setRevokeError] = useState("");
 
   // Load employee and project lists for filters
   useEffect(() => {
@@ -163,6 +169,24 @@ export default function HRWorkReports() {
     setSearchTerm("");
     setAppliedSearch("");
     setPage(1);
+  };
+
+  const handleConfirmRevoke = async () => {
+    if (!revokeTarget) return;
+    try {
+      setRevoking(true);
+      setRevokeError("");
+      const updated = await revokeWorkReportHR(revokeTarget.id);
+      setRevokeTarget(null);
+      setSuccessMsg(`Approval for work report #${updated.id} has been revoked and moved to Submitted.`);
+      setTimeout(() => setSuccessMsg(""), 4000);
+      loadReports();
+      loadStats();
+    } catch (err) {
+      setRevokeError(err.message || "Failed to revoke work report approval.");
+    } finally {
+      setRevoking(false);
+    }
   };
 
   const formatDate = (dateStr) => {
@@ -488,6 +512,27 @@ export default function HRWorkReports() {
                               Review
                             </button>
                           )}
+                          {report.status === "APPROVED" && (
+                            <button
+                              type="button"
+                              className="btn btn-secondary"
+                              style={{
+                                padding: "4px 10px",
+                                fontSize: "11.5px",
+                                borderRadius: "8px",
+                                color: "#b45309",
+                                borderColor: "#fde68a",
+                                background: "#fffbeb",
+                              }}
+                              onClick={() => {
+                                setRevokeTarget(report);
+                                setRevokeError("");
+                              }}
+                              title="Revoke Approval"
+                            >
+                              Revoke
+                            </button>
+                          )}
                           <button
                             type="button"
                             className="action-btn"
@@ -576,6 +621,8 @@ export default function HRWorkReports() {
             setSuccessMsg(
               updatedReport.status === "APPROVED"
                 ? `Work report #${updatedReport.id} approved.`
+                : updatedReport.status === "SUBMITTED"
+                ? `Work report #${updatedReport.id} approval revoked.`
                 : `Work report #${updatedReport.id} rejected with feedback.`
             );
             setTimeout(() => setSuccessMsg(""), 4000);
@@ -583,6 +630,78 @@ export default function HRWorkReports() {
             loadStats();
           }}
         />
+      )}
+
+      {/* Revoke Approval Confirmation Modal */}
+      {revokeTarget && (
+        <div
+          className="modal-overlay"
+          onClick={() => !revoking && setRevokeTarget(null)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "460px" }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ color: "var(--text-heading)" }}>
+                Revoke Approval?
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setRevokeTarget(null)}
+                disabled={revoking}
+              >
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              {revokeError && (
+                <div
+                  className="alert alert-danger"
+                  style={{
+                    marginBottom: "14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <AlertCircleIcon size={16} style={{ flexShrink: 0 }} />
+                  <span>{revokeError}</span>
+                </div>
+              )}
+              <p style={{ fontSize: "14px", color: "var(--text-main)", lineHeight: "1.5", margin: 0 }}>
+                This will move the work report back to the Submitted stage for review.
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setRevokeTarget(null)}
+                disabled={revoking}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{
+                  background: "#d97706",
+                  borderColor: "#d97706",
+                  color: "#ffffff",
+                }}
+                onClick={handleConfirmRevoke}
+                disabled={revoking}
+              >
+                {revoking ? "Revoking..." : "Revoke"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

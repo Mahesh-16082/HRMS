@@ -593,10 +593,12 @@ def test_09_complaint_duplicate_update_no_extra_notification(setup_test_env, db_
 
 def test_10_project_assigned_and_role_assigned_notifies_employee(setup_test_env, db_session):
     """
-    HR assigns employee to project with a role -> Employee receives PROJECT_ASSIGNED & PROJECT_ROLE_ASSIGNED notifications.
+    HR assigns employee to project with a role -> Employee receives exactly ONE PROJECT_ASSIGNED notification.
+    HR actor receives ZERO notifications.
     """
     emp_user_id = setup_test_env["emp_user_id"]
     emp_id = setup_test_env["emp_id"]
+    hr_user_id = setup_test_env["hr_user_id"]
     project_id = setup_test_env["project_id"]
     role_id = setup_test_env["role_id"]
 
@@ -605,36 +607,54 @@ def test_10_project_assigned_and_role_assigned_notifies_employee(setup_test_env,
     if existing:
         assignment_service.assignment_repository.delete_assignment(db_session, existing)
 
+    # Clean previous notifications for clean test assertions
+    db_session.query(Notification).filter(
+        Notification.reference_type == "project",
+        Notification.reference_id == str(project_id)
+    ).delete()
+    db_session.commit()
+
     # Create assignment
     assignment_service.create_assignment(db_session, project_id, emp_id, role_id)
 
-    # Verify PROJECT_ASSIGNED
-    prj_notif = (
+    # Verify exactly ONE PROJECT_ASSIGNED notification for employee
+    emp_notifs = (
         db_session.query(Notification)
         .filter(
             Notification.recipient_user_id == emp_user_id,
-            Notification.notification_type == NotificationType.PROJECT_ASSIGNED,
             Notification.reference_type == "project",
             Notification.reference_id == str(project_id),
         )
-        .first()
+        .all()
     )
-    assert prj_notif is not None
-    assert "Event Integration Project" in prj_notif.message
+    assert len(emp_notifs) == 1
+    prj_notif = emp_notifs[0]
+    assert prj_notif.notification_type == NotificationType.PROJECT_ASSIGNED
+    assert prj_notif.title == "New Project Assignment"
+    assert prj_notif.message == 'You have been assigned to "Event Integration Project" as Event Developer.'
 
-    # Verify PROJECT_ROLE_ASSIGNED
+    # Verify no duplicate PROJECT_ROLE_ASSIGNED notification was sent
     role_notif = (
         db_session.query(Notification)
         .filter(
             Notification.recipient_user_id == emp_user_id,
             Notification.notification_type == NotificationType.PROJECT_ROLE_ASSIGNED,
-            Notification.reference_type == "project_role",
-            Notification.reference_id == str(role_id),
         )
         .first()
     )
-    assert role_notif is not None
-    assert "Event Developer" in role_notif.message
+    assert role_notif is None
+
+    # Verify HR actor receives ZERO notifications
+    hr_notifs = (
+        db_session.query(Notification)
+        .filter(
+            Notification.recipient_user_id == hr_user_id,
+            Notification.reference_type == "project",
+            Notification.reference_id == str(project_id),
+        )
+        .all()
+    )
+    assert len(hr_notifs) == 0
 
 
 # ============================================================
@@ -686,12 +706,114 @@ def test_11_announcement_published_notifies_active_employees(setup_test_env, db_
     )
     assert other_notif is not None
 
+    # Crucial assertion: HR user must NEVER receive an announcement notification
+    hr_notif = (
+        db_session.query(Notification)
+        .filter(
+            Notification.recipient_user_id == hr_user_id,
+            Notification.notification_type == NotificationType.ANNOUNCEMENT_PUBLISHED,
+            Notification.reference_type == "announcement",
+            Notification.reference_id == str(ann.id),
+        )
+        .first()
+    )
+    assert hr_notif is None, "HR user must never receive announcement notifications"
+
     # Cleanup test notifications for this announcement
     db_session.query(Notification).filter(
         Notification.reference_type == "announcement",
         Notification.reference_id == str(ann.id),
     ).delete()
     db_session.commit()
+
+
+def test_11b_hr_with_employee_profile_never_receives_announcement_notification(setup_test_env, db_session):
+    """
+    Even if an HR user has an active record in the employees table,
+    publishing an announcement MUST NOT send an announcement notification to the HR user.
+    """
+    import pytest
+    from fastapi import HTTPException
+    from app.notification_service.service import create_notification
+
+    hr_user_id = setup_test_env["hr_user_id"]
+    emp_user_id = setup_test_env["emp_user_id"]
+
+    # 1. Ensure HR user has an active employee profile
+    hr_emp = db_session.query(Employee).filter(Employee.user_id == hr_user_id).first()
+    created_hr_emp = False
+    if not hr_emp:
+        hr_emp = Employee(
+            user_id=hr_user_id,
+            employee_code="HR_EVT_TEST",
+            first_name="HREvtFirst",
+            last_name="HREvtLast",
+            employment_status=EmploymentStatus.ACTIVE,
+            joining_date=date(2025, 1, 1),
+        )
+        db_session.add(hr_emp)
+        db_session.commit()
+        db_session.refresh(hr_emp)
+        created_hr_emp = True
+
+    try:
+        # 2. Publish an announcement
+        data = AnnouncementCreate(
+            title="Important Org Policy 2026",
+            description="All employees must read this policy.",
+            category=AnnouncementCategory.POLICY,
+            priority=AnnouncementPriority.HIGH,
+        )
+        ann = announcement_service.create_announcement(db_session, hr_user_id, data)
+        announcement_service.publish_announcement(db_session, ann.id)
+
+        # 3. Employee MUST receive notification
+        emp_notif = (
+            db_session.query(Notification)
+            .filter(
+                Notification.recipient_user_id == emp_user_id,
+                Notification.notification_type == NotificationType.ANNOUNCEMENT_PUBLISHED,
+                Notification.reference_type == "announcement",
+                Notification.reference_id == str(ann.id),
+            )
+            .first()
+        )
+        assert emp_notif is not None
+
+        # 4. HR user MUST NOT receive notification
+        hr_notif = (
+            db_session.query(Notification)
+            .filter(
+                Notification.recipient_user_id == hr_user_id,
+                Notification.notification_type == NotificationType.ANNOUNCEMENT_PUBLISHED,
+                Notification.reference_type == "announcement",
+                Notification.reference_id == str(ann.id),
+            )
+            .first()
+        )
+        assert hr_notif is None
+
+        # 5. Direct creation of announcement notification for HR must be blocked
+        with pytest.raises(HTTPException) as exc_info:
+            create_notification(
+                db=db_session,
+                recipient_user_id=hr_user_id,
+                notification_type=NotificationType.ANNOUNCEMENT_PUBLISHED,
+                title="Direct HR Announcement Attempt",
+                message="This should fail",
+            )
+        assert exc_info.value.status_code == 400
+        assert "cannot be sent to HR" in str(exc_info.value.detail)
+
+    finally:
+        # Cleanup
+        db_session.query(Notification).filter(
+            Notification.reference_type == "announcement",
+            Notification.reference_id == str(ann.id),
+        ).delete()
+        if created_hr_emp:
+            db_session.delete(hr_emp)
+        db_session.commit()
 
 
 # ============================================================

@@ -38,15 +38,15 @@ def get_notification_by_id(
     db: Session,
     notification_id: int,
     recipient_user_id: int,
+    exclude_types: list[NotificationType] | None = None,
 ) -> Notification | None:
-    return (
-        db.query(Notification)
-        .filter(
-            Notification.id == notification_id,
-            Notification.recipient_user_id == recipient_user_id,
-        )
-        .first()
+    query = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.recipient_user_id == recipient_user_id,
     )
+    if exclude_types:
+        query = query.filter(Notification.notification_type.not_in(exclude_types))
+    return query.first()
 
 
 def get_user_notifications(
@@ -56,6 +56,7 @@ def get_user_notifications(
     limit: int = 50,
     is_read: bool | None = None,
     notification_type: NotificationType | None = None,
+    exclude_types: list[NotificationType] | None = None,
 ) -> tuple[list[Notification], int]:
     query = db.query(Notification).filter(Notification.recipient_user_id == recipient_user_id)
 
@@ -64,6 +65,9 @@ def get_user_notifications(
 
     if notification_type is not None:
         query = query.filter(Notification.notification_type == notification_type)
+
+    if exclude_types:
+        query = query.filter(Notification.notification_type.not_in(exclude_types))
 
     total = query.with_entities(func.count(Notification.id)).scalar() or 0
 
@@ -80,16 +84,15 @@ def get_user_notifications(
 def count_unread_notifications(
     db: Session,
     recipient_user_id: int,
+    exclude_types: list[NotificationType] | None = None,
 ) -> int:
-    return (
-        db.query(func.count(Notification.id))
-        .filter(
-            Notification.recipient_user_id == recipient_user_id,
-            Notification.is_read.is_(False),
-        )
-        .scalar()
-        or 0
+    query = db.query(func.count(Notification.id)).filter(
+        Notification.recipient_user_id == recipient_user_id,
+        Notification.is_read.is_(False),
     )
+    if exclude_types:
+        query = query.filter(Notification.notification_type.not_in(exclude_types))
+    return query.scalar() or 0
 
 
 def mark_notification_as_read(
@@ -108,21 +111,21 @@ def mark_notification_as_read(
 def mark_all_notifications_as_read(
     db: Session,
     recipient_user_id: int,
+    exclude_types: list[NotificationType] | None = None,
     commit: bool = True,
 ) -> int:
-    updated_count = (
-        db.query(Notification)
-        .filter(
-            Notification.recipient_user_id == recipient_user_id,
-            Notification.is_read.is_(False),
-        )
-        .update(
-            {
-                Notification.is_read: True,
-                Notification.read_at: datetime.now(timezone.utc),
-            },
-            synchronize_session=False,
-        )
+    query = db.query(Notification).filter(
+        Notification.recipient_user_id == recipient_user_id,
+        Notification.is_read.is_(False),
+    )
+    if exclude_types:
+        query = query.filter(Notification.notification_type.not_in(exclude_types))
+    updated_count = query.update(
+        {
+            Notification.is_read: True,
+            Notification.read_at: datetime.now(timezone.utc),
+        },
+        synchronize_session=False,
     )
     if commit:
         db.commit()

@@ -11,7 +11,7 @@ import {
   CheckCircleIcon,
 } from "../icons/Icons";
 import { formatFileSize } from "./WorkReportAttachment";
-import { reviewWorkReportHR } from "../../api/workReportApi";
+import { reviewWorkReportHR, revokeWorkReportHR } from "../../api/workReportApi";
 
 export default function HRWorkReportDetails({
   report,
@@ -19,6 +19,8 @@ export default function HRWorkReportDetails({
   onReviewed, // (updatedReport) => void
 }) {
   const [reviewing, setReviewing] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
   const [rejectMode, setRejectMode] = useState(false);
   const [feedback, setFeedback] = useState("");
   const [error, setError] = useState("");
@@ -99,6 +101,20 @@ export default function HRWorkReportDetails({
       setError(err.message || "Failed to reject work report.");
     } finally {
       setReviewing(false);
+    }
+  };
+
+  const handleRevokeConfirm = async () => {
+    try {
+      setRevoking(true);
+      setError("");
+      const updated = await revokeWorkReportHR(report.id);
+      setShowRevokeConfirm(false);
+      if (onReviewed) onReviewed(updated);
+    } catch (err) {
+      setError(err.message || "Failed to revoke work report approval.");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -330,9 +346,25 @@ export default function HRWorkReportDetails({
 
         {/* Modal Footer Actions */}
         <div className="modal-footer" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={reviewing}>
+          <button type="button" className="btn btn-secondary" onClick={onClose} disabled={reviewing || revoking}>
             Close
           </button>
+
+          {isApproved && (
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{
+                color: "#b45309",
+                borderColor: "#fde68a",
+                background: "#fffbeb",
+              }}
+              onClick={() => setShowRevokeConfirm(true)}
+              disabled={reviewing || revoking}
+            >
+              Revoke
+            </button>
+          )}
 
           {isSubmitted && !rejectMode && (
             <div style={{ display: "flex", gap: "10px" }}>
@@ -359,6 +391,65 @@ export default function HRWorkReportDetails({
           )}
         </div>
       </div>
+
+      {/* Revoke Approval Confirmation Modal */}
+      {showRevokeConfirm && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 1100 }}
+          onClick={() => !revoking && setShowRevokeConfirm(false)}
+        >
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: "460px" }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ color: "var(--text-heading)" }}>
+                Revoke Approval?
+              </h3>
+              <button
+                type="button"
+                className="modal-close-btn"
+                onClick={() => setShowRevokeConfirm(false)}
+                disabled={revoking}
+              >
+                <CloseIcon size={18} />
+              </button>
+            </div>
+
+            <div className="modal-body">
+              <p style={{ fontSize: "14px", color: "var(--text-main)", lineHeight: "1.5", margin: 0 }}>
+                This will move the work report back to the Submitted stage for review.
+              </p>
+            </div>
+
+            <div className="modal-footer" style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setShowRevokeConfirm(false)}
+                disabled={revoking}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                style={{
+                  background: "#d97706",
+                  borderColor: "#d97706",
+                  color: "#ffffff",
+                }}
+                onClick={handleRevokeConfirm}
+                disabled={revoking}
+              >
+                {revoking ? "Revoking..." : "Revoke"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

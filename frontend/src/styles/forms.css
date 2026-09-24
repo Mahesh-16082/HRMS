@@ -199,12 +199,26 @@
   animation: slideUp 0.2s ease;
 }
 
+/* Ensure forms directly inside modal-card fill the card and enable internal body scrolling */
+.modal-card > form,
+form.modal-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: inherit;
+  min-height: 0;
+  overflow: hidden;
+  flex: 1 1 auto;
+}
+
 .modal-header {
   padding: 20px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--border-color);
+  flex-shrink: 0;
+  background: var(--bg-card);
 }
 
 .modal-title {
@@ -236,6 +250,28 @@
   display: flex;
   flex-direction: column;
   gap: 18px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 .modal-footer {
@@ -246,6 +282,7 @@
   justify-content: flex-end;
   gap: 12px;
   background: var(--bg-card-subtle);
+  flex-shrink: 0;
 }
 
 /* ========================================================

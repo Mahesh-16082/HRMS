@@ -22,6 +22,7 @@ from app.audit_service.models import AuditLog
 from app.work_report_service.models import WorkReport, WorkReportAttachment
 from app.performance_service.models import PerformanceReview, ReviewCategoryRating, PerformanceGoal
 from app.notification_service.models import Notification
+from app.policy_service.models import Policy
 
 config = context.config
 

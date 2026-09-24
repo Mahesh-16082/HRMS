@@ -731,3 +731,40 @@ def review_work_report_hr(
 
     return saved_report
 
+
+def revoke_work_report_hr(
+    db: Session,
+    current_user: User,
+    report_id: int,
+) -> WorkReport:
+    """
+    HR revokes approval of a work report, transitioning it from APPROVED back to SUBMITTED.
+    Only HR can perform this action.
+    """
+    if current_user.role != "hr":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only HR can revoke work report approval",
+        )
+
+    report = repository.get_work_report_by_id(db, report_id)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Work report not found",
+        )
+
+    if report.status != WorkReportStatus.APPROVED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot revoke approval for report in {getattr(report.status, 'value', report.status)} status. Only APPROVED reports can be revoked.",
+        )
+
+    report.status = WorkReportStatus.SUBMITTED
+    report.reviewed_by = None
+    report.reviewed_at = None
+    report.review_feedback = None
+
+    saved_report = repository.update_work_report(db, report)
+    return saved_report
+

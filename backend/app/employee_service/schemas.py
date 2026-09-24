@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 from app.employee_service.models import EmploymentStatus
 
@@ -39,6 +39,24 @@ class EmployeeCreate(BaseModel):
     department_id: int | None = None
 
     designation_id: int | None = None
+
+    @field_validator("date_of_birth", "joining_date", mode="before")
+    @classmethod
+    def parse_flexible_date(cls, v):
+        if not v or v == "":
+            return None
+        if isinstance(v, date):
+            return v
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return None
+            for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%d/%m/%Y", "%m-%d-%Y", "%d-%m-%Y"):
+                try:
+                    return datetime.strptime(v, fmt).date()
+                except ValueError:
+                    continue
+        return v
 
 
 # =========================

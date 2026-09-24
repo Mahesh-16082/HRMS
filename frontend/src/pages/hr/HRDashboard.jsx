@@ -151,15 +151,12 @@ export default function HRDashboard() {
           </Link>
 
           {/* Check Notifications */}
-          <div
-            className="quick-action-circle-item"
-            onClick={() => alert("Notification Service is scheduled for a future update.")}
-          >
+          <Link to="/hr/notifications" className="quick-action-circle-item">
             <div className="quick-action-round-btn" style={{ background: "#dbeafe", color: "#2563eb" }}>
               <NotificationsIcon size={24} />
             </div>
             <span className="quick-action-label">Check Notifications</span>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -238,21 +235,36 @@ export default function HRDashboard() {
             </button>
           </div>
 
-          {/* Security & Privileges */}
-          <div className="governance-card">
+          {/* Workplace Policies */}
+          <div
+            className="governance-card clickable"
+            onClick={() => navigate("/hr/policies")}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                navigate("/hr/policies");
+              }
+            }}
+          >
             <div className="governance-icon-wrap" style={{ background: "#dbeafe", color: "#2563eb" }}>
               <ShieldIcon size={24} />
             </div>
             <div className="governance-content">
-              <span className="governance-title">Security &amp; Privileges</span>
+              <span className="governance-title">Workplace Policies</span>
               <span className="governance-desc">
-                Review administrator access and account authorization status.
+                View company policies, workplace rules, and employee guidelines.
               </span>
             </div>
             <button
+              type="button"
               className="governance-arrow-btn"
-              aria-label="View Security Privileges"
-              onClick={() => alert("Admin Authorization controls are active.")}
+              aria-label="View Workplace Policies"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate("/hr/policies");
+              }}
             >
               <ArrowRight size={15} />
             </button>

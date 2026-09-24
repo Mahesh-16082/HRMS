@@ -253,6 +253,25 @@ def review_work_report_hr(
     )
 
 
+@router.patch(
+    "/{report_id}/revoke",
+    response_model=WorkReportResponse,
+    summary="Revoke approval of a work report (HR only)",
+)
+def revoke_work_report_hr(
+    report_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """HR revokes an APPROVED work report back to SUBMITTED status."""
+    return service.revoke_work_report_hr(
+        db=db,
+        current_user=current_user,
+        report_id=report_id,
+    )
+
+
+
 # ============================================================
 # ATTACHMENT ENDPOINTS
 # ============================================================

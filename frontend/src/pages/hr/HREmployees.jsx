@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { employeeApi } from "../../api/employeeApi";
 import SectionHeader from "../../components/common/SectionHeader";
@@ -17,7 +17,49 @@ import {
   LockIcon,
   ChevronLeft,
   ChevronRight,
+  PlusIcon,
+  AlertCircleIcon,
 } from "../../components/icons/Icons";
+
+function normalizeToISODate(val) {
+  if (!val || typeof val !== "string") return null;
+  const trimmed = val.trim();
+  if (!trimmed) return null;
+
+  // Already YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  // MM/DD/YYYY or M/D/YYYY
+  const mdyMatch = trimmed.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (mdyMatch) {
+    const month = mdyMatch[1].padStart(2, "0");
+    const day = mdyMatch[2].padStart(2, "0");
+    const year = mdyMatch[3];
+    return `${year}-${month}-${day}`;
+  }
+
+  // YYYY/MM/DD
+  const ymdMatch = trimmed.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (ymdMatch) {
+    const year = ymdMatch[1];
+    const month = ymdMatch[2].padStart(2, "0");
+    const day = ymdMatch[3].padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  // Fallback try standard Date parsing
+  const parsed = new Date(trimmed);
+  if (!isNaN(parsed.getTime())) {
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  return trimmed;
+}
 
 export default function HREmployees() {
   const { user } = useAuth(); // Current logged-in HR user
@@ -39,6 +81,22 @@ export default function HREmployees() {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  // Add form state
+  const initialAddForm = {
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+    date_of_birth: "",
+    joining_date: "",
+    address: "",
+  };
+  const [addForm, setAddForm] = useState(initialAddForm);
+  const [savingAdd, setSavingAdd] = useState(false);
+  const [addError, setAddError] = useState("");
+  const addModalBodyRef = useRef(null);
 
   // Edit form state
   const [editForm, setEditForm] = useState({
@@ -84,6 +142,104 @@ export default function HREmployees() {
   useEffect(() => {
     fetchEmployees();
   }, [fetchEmployees]);
+
+  // Lock background page scroll while any modal is open
+  const anyModalOpen =
+    addModalOpen ||
+    viewModalOpen ||
+    editModalOpen ||
+    statusModalOpen ||
+    archiveModalOpen;
+
+  useEffect(() => {
+    if (anyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow || "";
+      };
+    }
+  }, [anyModalOpen]);
+
+  // Open Add Employee Modal
+  const handleOpenAdd = () => {
+    setAddForm(initialAddForm);
+    setAddError("");
+    setAddModalOpen(true);
+  };
+
+  // Close Add Employee Modal
+  const handleCloseAdd = () => {
+    if (savingAdd) return;
+    setAddModalOpen(false);
+    setAddError("");
+  };
+
+  // Submit Add Form
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    setSavingAdd(true);
+    setAddError("");
+
+    try {
+      const fName = addForm.first_name.trim();
+      const lName = addForm.last_name.trim();
+      const email = addForm.email.trim();
+
+      if (!fName) {
+        throw new Error("First name is required.");
+      }
+      if (!lName) {
+        throw new Error("Last name is required.");
+      }
+      if (!email) {
+        throw new Error("Email address is required.");
+      }
+
+      const payload = {
+        email: email,
+        first_name: fName,
+        last_name: lName,
+        phone: addForm.phone.trim() || null,
+        date_of_birth: normalizeToISODate(addForm.date_of_birth),
+        joining_date: normalizeToISODate(addForm.joining_date),
+        address: addForm.address.trim() || null,
+      };
+
+      await employeeApi.createEmployee(payload);
+      setSuccessMessage(`Employee ${fName} ${lName} created successfully.`);
+      setAddModalOpen(false);
+      setAddForm(initialAddForm);
+      setPage(1);
+      fetchEmployees();
+    } catch (err) {
+      let errMsg = "Failed to create employee.";
+      if (
+        err.status === 409 ||
+        (typeof err?.data?.detail === "string" && err.data.detail.toLowerCase().includes("already exists")) ||
+        (err.message && err.message.toLowerCase().includes("already exists"))
+      ) {
+        errMsg = "An employee with this email already exists.";
+      } else if (typeof err?.data?.detail === "string") {
+        errMsg = err.data.detail;
+      } else if (Array.isArray(err?.data?.detail)) {
+        errMsg = err.data.detail
+          .map((d) => `${d.loc?.slice(1).join(".") || "field"}: ${d.msg}`)
+          .join(", ");
+      } else if (err.message) {
+        errMsg = err.message;
+      }
+
+      setAddError(errMsg);
+
+      // Scroll modal body to top smoothly so the error banner is immediately visible
+      if (addModalBodyRef.current) {
+        addModalBodyRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } finally {
+      setSavingAdd(false);
+    }
+  };
 
   // Open View Modal
   const handleView = (emp) => {
@@ -212,7 +368,22 @@ export default function HREmployees() {
 
   return (
     <div className="page-container">
-      <SectionHeader title="Employee Management" />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
+        <SectionHeader title="Employee Management" />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={handleOpenAdd}
+            aria-label="+ Add Employee"
+            title="+ Add Employee"
+            id="add-employee-btn"
+          >
+            <PlusIcon size={16} />
+            <span>Add Employee</span>
+          </button>
+        </div>
+      </div>
 
       {successMessage && (
         <div className="alert alert-success" style={{ marginBottom: "16px" }}>
@@ -764,6 +935,229 @@ export default function HREmployees() {
                 Confirm Archive
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          ADD EMPLOYEE MODAL (HR CREATE EMPLOYEE)
+      ======================================================== */}
+      {addModalOpen && (
+        <div className="modal-overlay" onClick={handleCloseAdd}>
+          <div
+            className="modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "600px",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            <form
+              onSubmit={handleAddSubmit}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
+                maxHeight: "inherit",
+                minHeight: 0,
+                overflow: "hidden",
+                flex: "1 1 auto",
+              }}
+            >
+              <div
+                className="modal-header"
+                style={{
+                  flexShrink: 0,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 10,
+                  background: "var(--bg-card)",
+                }}
+              >
+                <h3 className="modal-title">Add New Employee</h3>
+                <button
+                  type="button"
+                  className="modal-close-btn"
+                  onClick={handleCloseAdd}
+                  disabled={savingAdd}
+                >
+                  <CloseIcon size={18} />
+                </button>
+              </div>
+
+              <div
+                className="modal-body"
+                ref={addModalBodyRef}
+                style={{
+                  flex: "1 1 auto",
+                  overflowY: "auto",
+                  minHeight: 0,
+                  overscrollBehavior: "contain",
+                }}
+              >
+                {addError && (
+                  <div
+                    className="alert alert-danger"
+                    style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px" }}
+                  >
+                    <AlertCircleIcon size={18} style={{ flexShrink: 0 }} />
+                    <span>{addError}</span>
+                  </div>
+                )}
+
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">First Name *</label>
+                    <input
+                      type="text"
+                      placeholder="First Name"
+                      value={addForm.first_name}
+                      onChange={(e) => setAddForm({ ...addForm, first_name: e.target.value })}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Last Name *</label>
+                    <input
+                      type="text"
+                      placeholder="Last Name"
+                      value={addForm.last_name}
+                      onChange={(e) => setAddForm({ ...addForm, last_name: e.target.value })}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Email Address *</label>
+                    <input
+                      type="email"
+                      placeholder="employee@example.com"
+                      value={addForm.email}
+                      onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                      required
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="e.g. +91 8790242942"
+                      value={addForm.phone}
+                      onChange={(e) => setAddForm({ ...addForm, phone: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Date of Birth</label>
+                    <input
+                      type="date"
+                      value={addForm.date_of_birth}
+                      onChange={(e) => setAddForm({ ...addForm, date_of_birth: e.target.value })}
+                      onClick={(e) => {
+                        try {
+                          e.target.showPicker?.();
+                        } catch (_) {}
+                      }}
+                      className="form-input"
+                      style={{ cursor: "pointer" }}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Joining Date</label>
+                    <input
+                      type="date"
+                      value={addForm.joining_date}
+                      onChange={(e) => setAddForm({ ...addForm, joining_date: e.target.value })}
+                      onClick={(e) => {
+                        try {
+                          e.target.showPicker?.();
+                        } catch (_) {}
+                      }}
+                      className="form-input"
+                      style={{ cursor: "pointer" }}
+                    />
+                  </div>
+
+                  <div className="form-group full-width">
+                    <label className="form-label">Residential Address</label>
+                    <input
+                      type="text"
+                      placeholder="Street, City, Postal Code"
+                      value={addForm.address}
+                      onChange={(e) => setAddForm({ ...addForm, address: e.target.value })}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className="modal-footer"
+                style={{
+                  flexShrink: 0,
+                  position: "sticky",
+                  bottom: 0,
+                  zIndex: 10,
+                  background: "var(--bg-card-subtle)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                }}
+              >
+                {addError ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      color: "#ef4444",
+                      fontSize: "13px",
+                      fontWeight: 500,
+                      maxWidth: "60%",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={addError}
+                  >
+                    <AlertCircleIcon size={16} style={{ flexShrink: 0 }} />
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{addError}</span>
+                  </div>
+                ) : (
+                  <div />
+                )}
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={handleCloseAdd}
+                    disabled={savingAdd}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={savingAdd}
+                    title="Create Employee"
+                    aria-label="Create Employee"
+                  >
+                    {savingAdd ? "Creating..." : "Create Employee"}
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

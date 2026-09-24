@@ -4,12 +4,20 @@ from sqlalchemy.orm import Session
 from app.authentication_service.models import User
 from app.notification_service import repository
 from app.notification_service.models import Notification, NotificationType
+from app.core.config import settings
 from app.notification_service.schemas import (
     MarkAllReadResponse,
     NotificationListResponse,
     NotificationResponse,
     UnreadNotificationCountResponse,
 )
+
+
+HR_EXCLUDED_TYPES = [
+    NotificationType.ANNOUNCEMENT_PUBLISHED,
+    NotificationType.PROJECT_ASSIGNED,
+    NotificationType.PROJECT_ROLE_ASSIGNED,
+]
 
 
 def create_notification(
@@ -33,6 +41,13 @@ def create_notification(
             detail=f"Recipient user with ID {recipient_user_id} not found",
         )
 
+    # Business rule safeguard: Announcement and Project notifications must NEVER be sent to HR
+    if notification_type in HR_EXCLUDED_TYPES and recipient.role == "hr":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{notification_type.value} notifications cannot be sent to HR users",
+        )
+
     return repository.create_notification(
         db=db,
         recipient_user_id=recipient_user_id,
@@ -48,8 +63,10 @@ def create_notification(
 def get_responsible_hr_user(db: Session, preferred_user_id: int | None = None) -> User | None:
     """
     Dynamically resolve the responsible HR recipient.
-    If preferred_user_id is provided and refers to an active HR user, returns that user.
-    Otherwise falls back to the primary active HR user.
+    1. If preferred_user_id is provided and refers to an active HR user, returns that user.
+    2. If the configured system HR user (settings.SMTP_EMAIL) matches an active HR user, returns that user.
+    3. Prefer real active HR user (excluding test accounts and scratch-updated accounts).
+    4. Fallback to any active HR user (e.g., in isolated test environments).
     """
     if preferred_user_id:
         hr = (
@@ -63,6 +80,37 @@ def get_responsible_hr_user(db: Session, preferred_user_id: int | None = None) -
         )
         if hr:
             return hr
+
+    # 1. Prefer configured system HR user (e.g., settings.SMTP_EMAIL)
+    if hasattr(settings, "SMTP_EMAIL") and settings.SMTP_EMAIL:
+        sys_hr = (
+            db.query(User)
+            .filter(
+                User.email == settings.SMTP_EMAIL,
+                User.role == "hr",
+                User.is_active.is_(True),
+            )
+            .first()
+        )
+        if sys_hr:
+            return sys_hr
+
+    # 2. Prefer real active HR user (excluding test_% and hr_updated_%)
+    real_hr = (
+        db.query(User)
+        .filter(
+            User.role == "hr",
+            User.is_active.is_(True),
+            ~User.email.like("test_%"),
+            ~User.email.like("hr_updated_%"),
+        )
+        .order_by(User.id.asc())
+        .first()
+    )
+    if real_hr:
+        return real_hr
+
+    # 3. Fallback to any active HR user
     return (
         db.query(User)
         .filter(User.role == "hr", User.is_active.is_(True))
@@ -90,6 +138,8 @@ def list_notifications(
             detail="Limit must be between 1 and 100",
         )
 
+    exclude_types = HR_EXCLUDED_TYPES if current_user.role == "hr" else None
+
     notifications, total = repository.get_user_notifications(
         db=db,
         recipient_user_id=current_user.id,
@@ -97,11 +147,13 @@ def list_notifications(
         limit=limit,
         is_read=is_read,
         notification_type=notification_type,
+        exclude_types=exclude_types,
     )
 
     unread_count = repository.count_unread_notifications(
         db=db,
         recipient_user_id=current_user.id,
+        exclude_types=exclude_types,
     )
 
     return NotificationListResponse(
@@ -117,9 +169,11 @@ def get_unread_count(
     db: Session,
     current_user: User,
 ) -> UnreadNotificationCountResponse:
+    exclude_types = HR_EXCLUDED_TYPES if current_user.role == "hr" else None
     count = repository.count_unread_notifications(
         db=db,
         recipient_user_id=current_user.id,
+        exclude_types=exclude_types,
     )
     return UnreadNotificationCountResponse(unread_count=count)
 
@@ -129,10 +183,12 @@ def mark_notification_as_read(
     notification_id: int,
     current_user: User,
 ) -> NotificationResponse:
+    exclude_types = HR_EXCLUDED_TYPES if current_user.role == "hr" else None
     notification = repository.get_notification_by_id(
         db=db,
         notification_id=notification_id,
         recipient_user_id=current_user.id,
+        exclude_types=exclude_types,
     )
     if not notification:
         raise HTTPException(
@@ -154,9 +210,11 @@ def mark_all_as_read(
     db: Session,
     current_user: User,
 ) -> MarkAllReadResponse:
+    exclude_types = HR_EXCLUDED_TYPES if current_user.role == "hr" else None
     updated_count = repository.mark_all_notifications_as_read(
         db=db,
         recipient_user_id=current_user.id,
+        exclude_types=exclude_types,
     )
     return MarkAllReadResponse(
         updated_count=updated_count,
@@ -169,10 +227,12 @@ def delete_notification(
     notification_id: int,
     current_user: User,
 ) -> None:
+    exclude_types = HR_EXCLUDED_TYPES if current_user.role == "hr" else None
     notification = repository.get_notification_by_id(
         db=db,
         notification_id=notification_id,
         recipient_user_id=current_user.id,
+        exclude_types=exclude_types,
     )
     if not notification:
         raise HTTPException(

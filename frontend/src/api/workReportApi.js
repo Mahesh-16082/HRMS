@@ -101,6 +101,11 @@ export const reviewWorkReportHR = (id, data) =>
     body: JSON.stringify(data),
   });
 
+export const revokeWorkReportHR = (id) =>
+  apiRequest(`/api/work-reports/${id}/revoke`, {
+    method: "PATCH",
+  });
+
 export const workReportApi = {
   createWorkReport,
   getMyWorkReports,
@@ -116,6 +121,7 @@ export const workReportApi = {
   getWorkReportsHR,
   getWorkReportDetailsHR,
   reviewWorkReportHR,
+  revokeWorkReportHR,
 };
 
 export default workReportApi;

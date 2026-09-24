@@ -46,6 +46,7 @@ def assign_employee(
         project_id=data.project_id,
         employee_id=data.employee_id,
         role_id=data.role_id,
+        current_user=current_user,
     )
 
 

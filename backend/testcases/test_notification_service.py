@@ -1,6 +1,6 @@
 import pytest
 from datetime import datetime, timezone
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -466,3 +466,86 @@ def test_17_invalid_notification_type_validation(setup_users):
     as_user(setup_users["user_a_id"])
     res = client.get("/api/notifications?notification_type=NON_EXISTENT_TYPE")
     assert res.status_code == 422
+
+
+def test_18_hr_cannot_be_recipient_of_announcement_notification(setup_users):
+    """Attempting to create an ANNOUNCEMENT_PUBLISHED notification for an HR user raises 400."""
+    db = SessionLocal()
+    try:
+        with pytest.raises(HTTPException) as exc_info:
+            create_notification(
+                db=db,
+                recipient_user_id=setup_users["hr_user_id"],
+                notification_type=NotificationType.ANNOUNCEMENT_PUBLISHED,
+                title="HR Announcement Attempt",
+                message="This must fail.",
+                commit=True,
+            )
+        assert exc_info.value.status_code == 400
+        assert "cannot be sent to HR" in str(exc_info.value.detail)
+    finally:
+        db.close()
+
+
+def test_19_hr_endpoints_exclude_announcements_safeguard(setup_users):
+    """Even if an announcement record is inserted in DB for HR, HR endpoints never return it."""
+    db = SessionLocal()
+    hr_id = setup_users["hr_user_id"]
+    try:
+        db.query(Notification).filter(
+            Notification.recipient_user_id == hr_id
+        ).delete(synchronize_session=False)
+        db.commit()
+
+        # Directly insert an announcement notification bypassing create_notification
+        direct_ann = Notification(
+            recipient_user_id=hr_id,
+            notification_type=NotificationType.ANNOUNCEMENT_PUBLISHED,
+            title="Stray HR Announcement",
+            message="Should never be visible to HR",
+            is_read=False,
+        )
+        legit_leave = Notification(
+            recipient_user_id=hr_id,
+            notification_type=NotificationType.LEAVE_REQUEST_SUBMITTED,
+            title="Legitimate Leave Request",
+            message="Employee submitted a leave request",
+            is_read=False,
+        )
+        db.add_all([direct_ann, legit_leave])
+        db.commit()
+        db.refresh(direct_ann)
+        db.refresh(legit_leave)
+        direct_ann_id = direct_ann.id
+        legit_leave_id = legit_leave.id
+
+        as_user(hr_id)
+
+        # GET /api/notifications should only return legit_leave, not direct_ann
+        res = client.get("/api/notifications")
+        assert res.status_code == 200
+        data = res.json()
+        ids = [n["id"] for n in data["notifications"]]
+        assert legit_leave_id in ids
+        assert direct_ann_id not in ids
+
+        # GET /api/notifications/unread-count should NOT count direct_ann
+        res_count = client.get("/api/notifications/unread-count")
+        assert res_count.status_code == 200
+        assert res_count.json()["unread_count"] == 1
+
+        # Trying to mark direct_ann as read should return 404
+        res_read = client.patch(f"/api/notifications/{direct_ann_id}/read")
+        assert res_read.status_code == 404
+
+        # Trying to delete direct_ann should return 404
+        res_del = client.delete(f"/api/notifications/{direct_ann_id}")
+        assert res_del.status_code == 404
+
+    finally:
+        db.query(Notification).filter(
+            Notification.recipient_user_id == hr_id
+        ).delete(synchronize_session=False)
+        db.commit()
+        db.close()
+

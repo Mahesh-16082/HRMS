@@ -2,34 +2,39 @@ import smtplib
 from email.message import EmailMessage
 
 from app.core.config import settings
+from app.email_service.assets import get_email_assets, get_project_assignment_email_assets
+from app.email_service.templates import (
+    get_otp_email_html,
+    get_otp_email_text,
+    get_project_assignment_email_html,
+    get_project_assignment_email_text,
+)
 
 
 def send_otp_email(
     recipient_email: str,
     otp: str
 ):
+    expire_minutes = settings.OTP_EXPIRE_MINUTES
+    plain_text = get_otp_email_text(otp=otp, expire_minutes=expire_minutes)
+    html_content = get_otp_email_html(otp=otp, expire_minutes=expire_minutes)
+
     message = EmailMessage()
 
     message["Subject"] = "HRMS Login OTP"
     message["From"] = settings.SMTP_EMAIL
     message["To"] = recipient_email
 
-    message.set_content(
-        f"""
-Hello,
+    # Plain-text fallback for maximum client compatibility
+    message.set_content(plain_text)
+    # Rich HTML email matching HRMS enterprise design
+    message.add_alternative(html_content, subtype="html")
 
-Your HRMS login OTP is:
-
-{otp}
-
-This OTP is valid for {settings.OTP_EXPIRE_MINUTES} minutes.
-
-If you did not request this OTP, please ignore this email.
-
-Regards,
-HRMS Team
-"""
-    )
+    # Attach inline CID image assets for 100% reliable icon rendering in Gmail & other clients
+    html_part = message.get_payload()[1]
+    assets = get_email_assets()
+    for cid, data in assets.items():
+        html_part.add_related(data, "image", "png", cid=f"<{cid}>")
 
     with smtplib.SMTP(
         settings.SMTP_HOST,
@@ -58,40 +63,45 @@ def send_project_assignment_email(
     role_name: str | None = None,
     assigned_date = None,
 ):
+    plain_text = get_project_assignment_email_text(
+        employee_name=employee_name,
+        project_name=project_name,
+        project_code=project_code,
+        description=description,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        role_name=role_name,
+        assigned_date=assigned_date,
+    )
+    html_content = get_project_assignment_email_html(
+        employee_name=employee_name,
+        project_name=project_name,
+        project_code=project_code,
+        description=description,
+        start_date=start_date,
+        end_date=end_date,
+        status=status,
+        role_name=role_name,
+        assigned_date=assigned_date,
+    )
+
     message = EmailMessage()
 
     message["Subject"] = "You have been assigned to a new project"
     message["From"] = settings.SMTP_EMAIL
     message["To"] = recipient_email
 
-    role_line = f"Role: {role_name}\n" if role_name else ""
-    assigned_str = (
-        assigned_date.strftime("%d %B %Y")
-        if hasattr(assigned_date, "strftime")
-        else (str(assigned_date) if assigned_date else datetime.now(timezone.utc).strftime("%d %B %Y"))
-    )
-    start_str = start_date.strftime("%d %B %Y") if hasattr(start_date, "strftime") else (str(start_date) if start_date else "Not specified")
-    end_str = end_date.strftime("%d %B %Y") if hasattr(end_date, "strftime") else (str(end_date) if end_date else "Not specified")
-    desc_line = f"Description: {description}\n" if description else ""
-    status_str = f"Status: {status}\n" if status else ""
+    # Plain-text fallback for maximum client compatibility
+    message.set_content(plain_text)
+    # Rich HTML email matching HRMS enterprise design & reference image
+    message.add_alternative(html_content, subtype="html")
 
-    message.set_content(
-        f"""Hello {employee_name},
-
-You have been assigned to the following project:
-
-Project: {project_name}
-Project Code: {project_code}
-{role_line}Assigned Date: {assigned_str}
-Start Date: {start_str}
-End Date: {end_str}
-{status_str}{desc_line}
-Please check your HRMS dashboard for more details.
-
-Regards,
-HRMS Team
-"""
-    )
+    # Attach inline CID image assets for 100% reliable icon rendering in Gmail & other clients
+    html_part = message.get_payload()[1]
+    assets = get_project_assignment_email_assets()
+    for cid, data in assets.items():
+        html_part.add_related(data, "image", "png", cid=f"<{cid}>")
 
     with smtplib.SMTP(
         settings.SMTP_HOST,
@@ -102,4 +112,5 @@ HRMS Team
             settings.SMTP_EMAIL,
             settings.SMTP_PASSWORD
         )
-        server.send_message(message)
+        server.send_message(message)
+

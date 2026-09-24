@@ -40,6 +40,7 @@ import HRAnnouncements from "./pages/hr/HRAnnouncements";
 import HRAuditLogs from "./pages/hr/HRAuditLogs";
 import HRWorkReports from "./pages/hr/HRWorkReports";
 import HRNotifications from "./pages/hr/HRNotifications";
+import WorkplacePolicies from "./pages/common/WorkplacePolicies";
 
 import { getAuthToken } from "./api/apiClient";
 
@@ -83,6 +84,7 @@ function App() {
                   <Route path="/employee/work-reports" element={<EmployeeWorkReports />} />
                   <Route path="/employee/performance" element={<EmployeePerformance />} />
                   <Route path="/employee/notifications" element={<EmployeeNotifications />} />
+                  <Route path="/employee/policies" element={<WorkplacePolicies role="employee" />} />
                 </Route>
               </Route>
 
@@ -104,6 +106,7 @@ function App() {
                   <Route path="/hr/audit-logs" element={<HRAuditLogs />} />
                   <Route path="/hr/work-reports" element={<HRWorkReports />} />
                   <Route path="/hr/notifications" element={<HRNotifications />} />
+                  <Route path="/hr/policies" element={<WorkplacePolicies role="hr" />} />
                 </Route>
               </Route>
 

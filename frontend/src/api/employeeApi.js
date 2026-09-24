@@ -24,6 +24,13 @@ export const employeeApi = {
   // HR only: Dashboard counts
   getEmployeeCounts: () => apiRequest("/api/employees/dashboard/counts"),
 
+  // HR only: Create employee
+  createEmployee: (data) =>
+    apiRequest("/api/employees", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
   // HR only: List employees with pagination and filters
   listEmployees: (params = {}) => {
     const query = new URLSearchParams();

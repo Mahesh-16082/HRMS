@@ -29,7 +29,6 @@ export default function EmployeeDashboard() {
   // Leave Service data state
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [loadingBalances, setLoadingBalances] = useState(true);
-  const [selectedBalanceIndex, setSelectedBalanceIndex] = useState(0);
 
   // Announcements data state
   const [announcements, setAnnouncements] = useState([]);
@@ -201,125 +200,6 @@ export default function EmployeeDashboard() {
           color="orange"
           onClick={() => navigate("/employee/announcements")}
         />
-      </div>
-
-      {/* Mid Row: Leave Quota & My Schedule */}
-      <div className="employee-top-cards-row">
-        {/* Leave Entitlements & Quotas */}
-        <div className="leave-quota-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div className="section-header-title-group">
-              <div className="section-accent-bar" />
-              <div>
-                <h2 className="section-title">Leave Entitlements &amp; Quotas</h2>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                  Your real-time assigned leave allowances for the current calendar year
-                </span>
-              </div>
-            </div>
-            <span
-              className="badge"
-              style={{ background: "#dbeafe", color: "#1d4ed8", padding: "4px 10px", fontSize: "11px" }}
-            >
-              Year {new Date().getFullYear()}
-            </span>
-          </div>
-
-          {loadingBalances ? (
-            <div style={{ padding: "28px 0", textAlign: "center", color: "var(--text-muted)", fontSize: "13px" }}>
-              Loading leave entitlements...
-            </div>
-          ) : leaveBalances.length === 0 ? (
-            <div style={{ padding: "24px 0", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontWeight: "600", fontSize: "14px", color: "var(--text-heading)" }}>
-                No Leave Entitlements Assigned
-              </span>
-              <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                No active leave quotas are configured for this year. Please contact HR.
-              </span>
-            </div>
-          ) : (
-            <>
-              {/* If multiple leave types exist, render type selector tabs */}
-              {leaveBalances.length > 1 && (
-                <div style={{ display: "flex", gap: "6px", margin: "10px 0 4px", flexWrap: "wrap" }}>
-                  {leaveBalances.map((b, idx) => (
-                    <button
-                      key={b.id}
-                      type="button"
-                      onClick={() => setSelectedBalanceIndex(idx)}
-                      style={{
-                        padding: "3px 10px",
-                        fontSize: "11px",
-                        borderRadius: "12px",
-                        border: "1px solid",
-                        borderColor: selectedBalanceIndex === idx ? "var(--primary)" : "var(--border-color)",
-                        background: selectedBalanceIndex === idx ? "var(--primary)" : "transparent",
-                        color: selectedBalanceIndex === idx ? "#fff" : "var(--text-muted)",
-                        cursor: "pointer",
-                        fontWeight: selectedBalanceIndex === idx ? "600" : "400",
-                        transition: "all 0.15s ease",
-                      }}
-                    >
-                      {b.leave_type?.name || `Type #${b.leave_type_id}`}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {(() => {
-                const currentBalance = leaveBalances[selectedBalanceIndex] || leaveBalances[0];
-                return (
-                  <>
-                    <div className="leave-quota-card-inner">
-                      <div className="leave-quota-icon">
-                        <CalendarIcon size={28} />
-                      </div>
-                      <div className="leave-quota-numbers">
-                        <span className="leave-quota-title">
-                          {currentBalance.leave_type?.name || "Leave Quota"}
-                        </span>
-                        <span className="leave-quota-val">
-                          {Number(currentBalance.available).toFixed(1)}
-                        </span>
-                        <span className="leave-quota-sub">Days Remaining Available</span>
-                      </div>
-                    </div>
-
-                    <div className="leave-quota-footer">
-                      <span>Total Allocated: {Number(currentBalance.allocated).toFixed(2)}</span>
-                      <span>Used: {Number(currentBalance.used).toFixed(2)}</span>
-                    </div>
-                  </>
-                );
-              })()}
-            </>
-          )}
-        </div>
-
-        {/* My Schedule */}
-        <div className="schedule-card">
-          <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <div className="section-header-title-group">
-              <div className="section-accent-bar" />
-              <h2 className="section-title">My Schedule</h2>
-            </div>
-            <span className="section-link-btn" style={{ fontSize: "12px" }}>
-              View Calendar <ArrowRight size={13} />
-            </span>
-          </div>
-
-          <div style={{ padding: "20px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
-            <div className="schedule-empty-icon">
-              <CalendarIcon size={32} />
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ fontWeight: "700", fontSize: "13px", color: "var(--text-heading)" }}>Today</span>
-            </div>
-            <span className="schedule-empty-title">No events for today</span>
-            <span className="schedule-empty-sub">Enjoy your productive day!</span>
-          </div>
-        </div>
       </div>
 
       {/* Quick Actions & Services */}

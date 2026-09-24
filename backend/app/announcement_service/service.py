@@ -181,9 +181,10 @@ def publish_announcement(
             Employee.employment_status == EmploymentStatus.ACTIVE,
             Employee.deleted_at.is_(None),
             User.is_active.is_(True),
+            User.role == "employee",
         )
         .all()
-        if row[0] is not None
+        if row[0] is not None and row[0] != announcement.created_by
     ]
     for uid in active_employee_user_ids:
         create_notification(

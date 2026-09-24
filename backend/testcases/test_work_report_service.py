@@ -908,3 +908,120 @@ def test_32_cannot_delete_attachment_on_submitted_report(mock_upload, setup_data
     assert del_res.status_code == 400
     assert "cannot delete attachment when report is in submitted status" in del_res.json()["detail"].lower()
 
+
+def test_33_hr_revoke_approved_work_report_success(setup_data, db_session):
+    from app.notification_service.models import Notification
+
+    # 1. Employee creates and submits a report
+    as_user(setup_data["emp1_user_id"])
+    target_date = date.today() - timedelta(days=25)
+
+    create_res = client.post("/api/work-reports", json={
+        "work_date": str(target_date),
+        "title": "Revoke Test Report",
+        "tasks_completed": "Completed initial implementation for revoke.",
+        "submit": True,
+    })
+    assert create_res.status_code == 201
+    report_id = create_res.json()["id"]
+    assert create_res.json()["status"] == "SUBMITTED"
+
+    # 2. HR reviews and approves the report
+    as_user(setup_data["hr_id"])
+    approve_res = client.patch(f"/api/work-reports/{report_id}/review", json={
+        "status": "APPROVED",
+        "review_feedback": "Looks great, approved!",
+    })
+    assert approve_res.status_code == 200
+    assert approve_res.json()["status"] == "APPROVED"
+    assert approve_res.json()["reviewed_by"] == setup_data["hr_id"]
+
+    # 3. Check notifications count before revoke
+    notif_count_before = db_session.query(Notification).count()
+
+    # 4. HR revokes approval
+    revoke_res = client.patch(f"/api/work-reports/{report_id}/revoke")
+    assert revoke_res.status_code == 200
+    revoked_data = revoke_res.json()
+    assert revoked_data["status"] == "SUBMITTED"
+    assert revoked_data["reviewed_by"] is None
+    assert revoked_data["reviewed_at"] is None
+    assert revoked_data["review_feedback"] is None
+
+    # 5. Verify no duplicate/new notifications created on revoke
+    notif_count_after = db_session.query(Notification).count()
+    assert notif_count_after == notif_count_before
+
+    # 6. Verify HR can review the report again normally
+    re_review_res = client.patch(f"/api/work-reports/{report_id}/review", json={
+        "status": "APPROVED",
+        "review_feedback": "Re-approved after review.",
+    })
+    assert re_review_res.status_code == 200
+    assert re_review_res.json()["status"] == "APPROVED"
+
+
+def test_34_employee_cannot_revoke_work_report_approval(setup_data):
+    # 1. Employee creates and submits a report
+    as_user(setup_data["emp1_user_id"])
+    target_date = date.today() - timedelta(days=26)
+
+    create_res = client.post("/api/work-reports", json={
+        "work_date": str(target_date),
+        "title": "Auth Revoke Test",
+        "tasks_completed": "Completed tasks for auth test.",
+        "submit": True,
+    })
+    report_id = create_res.json()["id"]
+
+    # 2. HR approves the report
+    as_user(setup_data["hr_id"])
+    client.patch(f"/api/work-reports/{report_id}/review", json={
+        "status": "APPROVED",
+    })
+
+    # 3. Employee attempts to revoke approval -> 403 Forbidden
+    as_user(setup_data["emp1_user_id"])
+    revoke_res = client.patch(f"/api/work-reports/{report_id}/revoke")
+    assert revoke_res.status_code == 403
+    assert "only hr" in revoke_res.json()["detail"].lower()
+
+
+def test_35_cannot_revoke_unapproved_reports(setup_data):
+    as_user(setup_data["emp1_user_id"])
+    target_date = date.today() - timedelta(days=27)
+
+    # 1. Create a submitted report
+    create_res = client.post("/api/work-reports", json={
+        "work_date": str(target_date),
+        "title": "State Check Report",
+        "tasks_completed": "Completed tasks for state check.",
+        "submit": True,
+    })
+    report_id = create_res.json()["id"]
+
+    # 2. HR attempts to revoke while still SUBMITTED -> 400 Bad Request
+    as_user(setup_data["hr_id"])
+    revoke_sub_res = client.patch(f"/api/work-reports/{report_id}/revoke")
+    assert revoke_sub_res.status_code == 400
+    assert "only approved reports can be revoked" in revoke_sub_res.json()["detail"].lower()
+
+    # 3. HR rejects the report
+    reject_res = client.patch(f"/api/work-reports/{report_id}/review", json={
+        "status": "REJECTED",
+        "review_feedback": "Needs revision.",
+    })
+    assert reject_res.status_code == 200
+    assert reject_res.json()["status"] == "REJECTED"
+
+    # 4. HR attempts to revoke a REJECTED report -> 400 Bad Request
+    revoke_rej_res = client.patch(f"/api/work-reports/{report_id}/revoke")
+    assert revoke_rej_res.status_code == 400
+    assert "only approved reports can be revoked" in revoke_rej_res.json()["detail"].lower()
+
+    # 5. Verify the report remains REJECTED
+    get_res = client.get(f"/api/work-reports/{report_id}")
+    assert get_res.status_code == 200
+    assert get_res.json()["status"] == "REJECTED"
+
+

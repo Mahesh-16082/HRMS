@@ -62,16 +62,26 @@ export async function apiRequest(endpoint, options = {}) {
     }
 
     // Attempt to parse JSON
-    const contentType = response.headers.get("content-type");
     let data = null;
-    if (contentType && contentType.includes("application/json")) {
-      data = await response.json();
+    if (response.status === 204 || response.status === 205) {
+      data = null;
     } else {
+      const contentType = response.headers.get("content-type");
       const text = await response.text();
-      try {
-        data = text ? JSON.parse(text) : null;
-      } catch {
-        data = text;
+      if (text && text.trim()) {
+        if (contentType && contentType.includes("application/json")) {
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = text;
+          }
+        } else {
+          try {
+            data = JSON.parse(text);
+          } catch {
+            data = text;
+          }
+        }
       }
     }
 

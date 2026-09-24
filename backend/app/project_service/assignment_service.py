@@ -3,6 +3,7 @@ import logging
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.authentication_service.models import User
 from app.email_service import service as email_service
 from app.employee_service import repository as employee_repository
 from app.employee_service.models import EmploymentStatus
@@ -21,6 +22,7 @@ def create_assignment(
     project_id: int,
     employee_id: int,
     role_id: int | None = None,
+    current_user: User | None = None,
 ):
     # 1. Check project exists
     project = project_repository.get_project_by_id(
@@ -100,7 +102,25 @@ def create_assignment(
     )
 
     # 6. Send assignment notification email to employee using existing SMTP service
-    recipient_email = employee.user.email if employee.user else None
+    # The recipient MUST strictly be the assigned employee's email, NEVER current_user (HR actor)
+    recipient_email = None
+    if employee.user and employee.user.email:
+        recipient_email = employee.user.email.strip()
+    elif hasattr(employee, "email") and employee.email:
+        recipient_email = employee.email.strip()
+
+    # Business rule safeguard: Never send project assignment email to HR actor
+    if current_user and recipient_email and current_user.email:
+        if (
+            current_user.role == "hr"
+            and recipient_email.lower() == current_user.email.strip().lower()
+            and employee.user_id != current_user.id
+        ):
+            logger.warning(
+                f"Prevented project assignment email from being sent to HR actor {current_user.email}"
+            )
+            recipient_email = None
+
     if recipient_email:
         try:
             employee_name = f"{employee.first_name} {employee.last_name}".strip()
@@ -127,28 +147,20 @@ def create_assignment(
                 exc_info=True,
             )
 
-    # 7. Send in-app notifications to employee
+    # 7. Send in-app notification to the assigned employee (NEVER to HR)
+    # Exactly one project assignment notification per assignment
     if employee.user_id:
-        create_notification(
-            db=db,
-            recipient_user_id=employee.user_id,
-            notification_type=NotificationType.PROJECT_ASSIGNED,
-            title="Assigned to Project",
-            message=f"You have been assigned to project '{project.project_name}'.",
-            reference_type="project",
-            reference_id=str(project.id),
-            commit=True,
-        )
-        create_notification(
-            db=db,
-            recipient_user_id=employee.user_id,
-            notification_type=NotificationType.PROJECT_ROLE_ASSIGNED,
-            title="Project Role Assigned",
-            message=f"You have been assigned the role '{role.name}' on project '{project.project_name}'.",
-            reference_type="project_role",
-            reference_id=str(role.id),
-            commit=True,
-        )
+        if not (current_user and current_user.role == "hr" and employee.user_id == current_user.id):
+            create_notification(
+                db=db,
+                recipient_user_id=employee.user_id,
+                notification_type=NotificationType.PROJECT_ASSIGNED,
+                title="New Project Assignment",
+                message=f'You have been assigned to "{project.project_name}" as {role.name}.',
+                reference_type="project",
+                reference_id=str(project.id),
+                commit=True,
+            )
 
     return saved_assignment
 

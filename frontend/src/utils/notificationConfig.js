@@ -67,14 +67,14 @@ export const NOTIFICATION_CONFIG = {
     getTargetRoute: (role) => (role === "hr" ? "/hr/complaints" : "/employee/complaints"),
   },
   PROJECT_ASSIGNED: {
-    category: "Project",
+    category: "Projects",
     badgeLabel: "Project Assigned",
     variant: "blue",
     icon: ProjectsIcon,
     getTargetRoute: (role) => (role === "hr" ? "/hr/projects" : "/employee/projects"),
   },
   PROJECT_ROLE_ASSIGNED: {
-    category: "Project Role",
+    category: "Projects",
     badgeLabel: "Project Role",
     variant: "purple",
     icon: ProjectRolesIcon,

@@ -74,16 +74,18 @@ def create_employee(
     # 1. Check email
     # --------------------------------------------------------
 
+    email_clean = data.email.strip().lower()
+
     existing_user = (
         db.query(User)
-        .filter(User.email == data.email)
+        .filter(User.email.ilike(email_clean))
         .first()
     )
 
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A user with this email address already exists.",
+            detail="An employee with this email already exists.",
         )
 
     # --------------------------------------------------------
