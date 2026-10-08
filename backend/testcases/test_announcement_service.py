@@ -82,10 +82,14 @@ def as_user(user_id: int):
     app.dependency_overrides[get_current_user] = _override
 
 
+from unittest.mock import patch
+
+
 @pytest.fixture(scope="module", autouse=True)
 def cleanup_after_all():
-    yield
-    app.dependency_overrides.clear()
+    with patch("app.email_service.service.send_announcement_email"):
+        yield
+        app.dependency_overrides.clear()
 
 
 # ============================================================

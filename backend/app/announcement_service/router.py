@@ -185,6 +185,7 @@ def publish_announcement(
         db=db,
         announcement_id=announcement_id,
         data=data,
+        current_user=current_user,
     )
 
 

@@ -213,6 +213,15 @@ def db_session():
         db.close()
 
 
+from unittest.mock import patch
+
+
+@pytest.fixture(scope="module", autouse=True)
+def mock_announcement_email():
+    with patch("app.email_service.service.send_announcement_email"):
+        yield
+
+
 # ============================================================
 # 1. LEAVE SERVICE EVENT INTEGRATION TESTS
 # ============================================================

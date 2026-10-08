@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import logging
 
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
@@ -17,9 +18,12 @@ from app.announcement_service.schemas import (
     AnnouncementUpdate,
 )
 from app.authentication_service.models import User
+from app.email_service import service as email_service
 from app.employee_service.models import Employee, EmploymentStatus
 from app.notification_service.models import NotificationType
 from app.notification_service.service import create_notification
+
+logger = logging.getLogger(__name__)
 
 
 def validate_future_expiry(expires_at: datetime | None) -> None:
@@ -137,8 +141,9 @@ def publish_announcement(
     db: Session,
     announcement_id: int,
     data: AnnouncementPublish | None = None,
+    current_user: User | None = None,
 ) -> Announcement:
-    """Publish a DRAFT announcement and set published_at timestamp."""
+    """Publish a DRAFT announcement, create in-app notifications, and send email notifications to eligible employees."""
     announcement = repository.get_announcement_by_id(db, announcement_id)
     if not announcement:
         raise HTTPException(
@@ -173,9 +178,9 @@ def publish_announcement(
     announcement.published_at = now
     announcement.updated_at = now
 
-    active_employee_user_ids = [
-        row[0]
-        for row in db.query(Employee.user_id)
+    # Automatically query all active, non-deleted employees with active employee-role accounts
+    eligible_recipients = (
+        db.query(Employee, User)
         .join(User, Employee.user_id == User.id)
         .filter(
             Employee.employment_status == EmploymentStatus.ACTIVE,
@@ -184,12 +189,18 @@ def publish_announcement(
             User.role == "employee",
         )
         .all()
-        if row[0] is not None and row[0] != announcement.created_by
-    ]
-    for uid in active_employee_user_ids:
+    )
+
+    # 1. Create in-app notifications for all eligible employees (excluding publisher / creator HR)
+    for emp, user in eligible_recipients:
+        if user.id == announcement.created_by:
+            continue
+        if current_user and user.id == current_user.id:
+            continue
+
         create_notification(
             db=db,
-            recipient_user_id=uid,
+            recipient_user_id=user.id,
             notification_type=NotificationType.ANNOUNCEMENT_PUBLISHED,
             title=f"New Announcement: {announcement.title}",
             message=f"{announcement.title} has been published.",
@@ -198,7 +209,68 @@ def publish_announcement(
             commit=False,
         )
 
-    return repository.update_announcement(db, announcement)
+    # 2. Persist publication and notifications to database
+    saved_announcement = repository.update_announcement(db, announcement)
+
+    # 3. Determine publisher name from current_user or announcement creator
+    publisher_name = "HR Department"
+    if current_user and current_user.full_name and current_user.full_name.strip():
+        publisher_name = current_user.full_name.strip()
+    elif saved_announcement.creator and saved_announcement.creator.full_name and saved_announcement.creator.full_name.strip():
+        publisher_name = saved_announcement.creator.full_name.strip()
+
+    category_val = (
+        saved_announcement.category.value
+        if hasattr(saved_announcement.category, "value")
+        else str(saved_announcement.category)
+    )
+    priority_val = (
+        saved_announcement.priority.value
+        if hasattr(saved_announcement.priority, "value")
+        else str(saved_announcement.priority)
+    )
+
+    # 4. Automatically send announcement email notification to all eligible employees
+    for emp, user in eligible_recipients:
+        # Business rule safeguards: Never send announcement email to HR creator or publisher
+        if user.id == announcement.created_by:
+            continue
+        if current_user and user.id == current_user.id:
+            continue
+        if not user.email or not user.email.strip():
+            continue
+
+        recipient_email = user.email.strip()
+        if "@" not in recipient_email or "." not in recipient_email:
+            continue
+
+        if current_user and current_user.email and recipient_email.lower() == current_user.email.strip().lower():
+            continue
+
+        emp_name = f"{emp.first_name} {emp.last_name}".strip()
+        if not emp_name:
+            emp_name = (user.full_name or "").strip() or "Employee"
+
+        try:
+            email_service.send_announcement_email(
+                recipient_email=recipient_email,
+                employee_name=emp_name,
+                announcement_title=saved_announcement.title,
+                announcement_description=saved_announcement.description,
+                announcement_date=saved_announcement.published_at,
+                publisher_name=publisher_name,
+                category=category_val,
+                priority=priority_val,
+                published_date=saved_announcement.published_at,
+            )
+        except Exception as exc:
+            # Email failure must NOT fail announcement publishing; log cleanly without exposing credentials
+            logger.error(
+                f"Announcement published, but failed to send email to {recipient_email}: {exc}",
+                exc_info=True,
+            )
+
+    return saved_announcement
 
 
 def archive_announcement(
